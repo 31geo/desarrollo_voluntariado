@@ -220,9 +220,13 @@ function abrirModalCrear() {
 
 function abrirModalEditar(id) {
     modoEdicion = true;
-
     document.getElementById('modalTitulo').textContent        = 'Editar Permisos';
     document.getElementById('camposCreacion').style.display    = 'none';
+    // Deshabilitar campos de creación en modo edición para evitar errores de focus/validación
+    document.getElementById('username').disabled = true;
+    document.getElementById('password').disabled = true;
+    document.getElementById('confirmPassword').disabled = true;
+    document.getElementById('voluntarioId').disabled = true;
     document.getElementById('formUsuario').reset();
     document.getElementById('password').required              = false;
     document.getElementById('confirmPassword').required       = false;
@@ -234,8 +238,10 @@ function abrirModalEditar(id) {
                 mostrarNotificacion(data.error, 'error');
                 return;
             }
-
-            document.getElementById('usuarioId').value = data.idUsuario;
+            // Llenar el campo oculto después del reset
+            setTimeout(() => {
+                document.getElementById('usuarioId').value = data.idUsuario;
+            }, 0);
             document.getElementById('modalSubtitulo').textContent =
                 `Permisos de ${data.username} — ${data.nombreRol || 'Sin rol'}`;
 
@@ -257,6 +263,11 @@ function abrirModalEditar(id) {
 function cerrarModal() {
     document.getElementById('modalUsuario').style.display = 'none';
     document.body.style.overflow = 'auto';
+    // Habilitar campos de creación al cerrar modal
+    document.getElementById('username').disabled = false;
+    document.getElementById('password').disabled = false;
+    document.getElementById('confirmPassword').disabled = false;
+    document.getElementById('voluntarioId').disabled = false;
 }
 
 /* =====================================================================
@@ -266,6 +277,10 @@ function guardarUsuario(event) {
     event.preventDefault();
 
     const id = document.getElementById('usuarioId').value;
+    if (modoEdicion && !id) {
+        mostrarNotificacion('No se pudo identificar el usuario a editar. Intente de nuevo.', 'error');
+        return;
+    }
     const params = new URLSearchParams();
 
     if (!id) {
