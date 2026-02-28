@@ -209,9 +209,10 @@ function renderBeneficiarios(data) {
     </tr></thead><tbody>`;
     data.forEach((b, i) => {
         html += `<tr>
-            <td>${i + 1}</td><td>${fmt(b.nombres)}</td><td>${fmt(b.apellidos)}</td>
-            <td>${fmt(b.dni)}</td><td>${fmt(b.telefono)}</td><td>${fmt(b.distrito)}</td>
-            <td>${fmt(b.tipoBeneficiario)}</td><td>${fmt(b.necesidadPrincipal)}</td>
+            <td>${i + 1}</td><td>${fmt(b.organizacion)}</td><td>${fmt(b.direccion)}</td>
+            <td>${fmt(b.distrito)}</td><td>${fmt(b.necesidadPrincipal)}</td><td>${fmt(b.observaciones)}</td>
+            <td>${fmt(b.nombreResponsable)}</td><td>${fmt(b.apellidosResponsable)}</td>
+            <td>${fmt(b.dni)}</td><td>${fmt(b.telefono)}</td>
             <td>${estadoBadge(b.estado)}</td>
         </tr>`;
     });
