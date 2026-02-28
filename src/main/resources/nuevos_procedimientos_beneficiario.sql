@@ -1,20 +1,3 @@
--- CREAR TABLA BENEFICIARIO (estructura nueva)
-CREATE TABLE IF NOT EXISTS beneficiario (
-    id_beneficiario INT AUTO_INCREMENT PRIMARY KEY,
-    organizacion VARCHAR(255),
-    direccion VARCHAR(255),
-    distrito VARCHAR(100),
-    necesidad_principal VARCHAR(100),
-    observaciones TEXT,
-    nombre_responsable VARCHAR(100) NOT NULL,
-    apellidos_responsable VARCHAR(100) NOT NULL,
-    dni VARCHAR(20) NOT NULL,
-    telefono VARCHAR(20),
-    estado VARCHAR(10) DEFAULT 'ACTIVO',
-    id_usuario INT,
-    creado_en DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
 -- PROCEDIMIENTO: CREAR BENEFICIARIO
 DELIMITER $$
 CREATE PROCEDURE sp_crear_beneficiario_nuevo (

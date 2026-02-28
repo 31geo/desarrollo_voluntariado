@@ -192,8 +192,51 @@ function cerrarModal() {
 /* =====================================================================
    GUARDAR VOLUNTARIO
    ===================================================================== */
+function validarFormularioVoluntario() {
+    const dni = document.getElementById('dni').value.trim();
+    const telefono = document.getElementById('telefono').value.trim();
+    const nombres = document.getElementById('nombres').value.trim();
+    const apellidos = document.getElementById('apellidos').value.trim();
+    const carrera = document.getElementById('carrera').value.trim();
+
+    const regexSoloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+    const regexDNI = /^\d{8}$/;
+    const regexTelefono = /^\d{9}$/;
+
+    if (!regexDNI.test(dni)) {
+        mostrarNotificacion('El DNI debe tener exactamente 8 dígitos numéricos.', 'error');
+        return false;
+    }
+
+    if (!regexTelefono.test(telefono)) {
+        mostrarNotificacion('El teléfono debe tener exactamente 9 dígitos numéricos.', 'error');
+        return false;
+    }
+
+    if (!regexSoloLetras.test(nombres)) {
+        mostrarNotificacion('El campo de nombres solo debe contener letras.', 'error');
+        return false;
+    }
+
+    if (!regexSoloLetras.test(apellidos)) {
+        mostrarNotificacion('El campo de apellidos solo debe contener letras.', 'error');
+        return false;
+    }
+
+    if (!regexSoloLetras.test(carrera)) {
+        mostrarNotificacion('El campo de carrera solo debe contener letras.', 'error');
+        return false;
+    }
+
+    return true;
+}
+
 function guardarVoluntario(event) {
     event.preventDefault();
+
+    if (!validarFormularioVoluntario()) {
+        return;
+    }
 
     const id       = document.getElementById('voluntarioId').value;
     const nombres  = document.getElementById('nombres').value.trim();

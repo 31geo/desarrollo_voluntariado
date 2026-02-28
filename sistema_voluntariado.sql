@@ -54,7 +54,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizarDonacion` (IN `p_id_do
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizarMovimiento` (IN `p_id` INT, IN `p_tipo` VARCHAR(10), IN `p_monto` DECIMAL(12,2), IN `p_descripcion` VARCHAR(255), IN `p_categoria` VARCHAR(60), IN `p_comprobante` VARCHAR(100), IN `p_fecha` DATE, IN `p_id_actividad` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizarMovimiento` (IN `p_id` INT, IN `p_tipo` VARCHAR(10), IN `p_monto` DECIMAL(12,2), IN `p_descripcion` VARCHAR(255), IN `p_categoria` VARCHAR(60), IN `p_comprobante` VARCHAR(100), IN `p_fecha` DATE, IN `p_id_actividad` INT, IN `p_id_usuario` INT)   BEGIN
     UPDATE movimiento_financiero
     SET tipo              = p_tipo,
         monto             = p_monto,
@@ -244,16 +244,28 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_usuario` (IN `p_id_us
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_voluntario` (IN `p_id_voluntario` INT, IN `p_nombres` VARCHAR(100), IN `p_apellidos` VARCHAR(100), IN `p_dni` VARCHAR(20), IN `p_correo` VARCHAR(100), IN `p_telefono` VARCHAR(20), IN `p_carrera` VARCHAR(100))   BEGIN
-    UPDATE voluntario
-    SET nombres = p_nombres,
-        apellidos = p_apellidos,
-        dni = p_dni,
-        correo = p_correo,
-        telefono = p_telefono,
-        carrera = p_carrera
-    WHERE id_voluntario = p_id_voluntario;
-    
-    SELECT ROW_COUNT() AS filas_afectadas;
+    -- Validar duplicados
+    IF EXISTS (SELECT 1 FROM voluntario WHERE dni = p_dni) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El DNI ya está registrado';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM voluntario WHERE correo = p_correo) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El correo ya está registrado';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM voluntario WHERE telefono = p_telefono) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El teléfono ya está registrado';
+    END IF;
+
+    -- Insertar nuevo voluntario
+    INSERT INTO voluntario (nombres, apellidos, dni, correo, telefono, carrera, cargo, acceso_sistema, estado, id_usuario)
+    VALUES (p_nombres, p_apellidos, p_dni, p_correo, p_telefono, p_carrera,
+            IFNULL(p_cargo, 'Voluntario'),
+            IFNULL(p_acceso_sistema, 0),
+            'ACTIVO', 
+            IF(p_id_usuario > 0, p_id_usuario, NULL));
+
+    SELECT LAST_INSERT_ID() AS id_voluntario;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_anular_certificado` (IN `p_id_certificado` INT, IN `p_motivo_anulacion` TEXT)   BEGIN
@@ -587,14 +599,39 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_usuario` (IN `p_nombres` V
     SELECT LAST_INSERT_ID() AS id_usuario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_voluntario` (IN `p_nombres` VARCHAR(100), IN `p_apellidos` VARCHAR(100), IN `p_dni` VARCHAR(20), IN `p_correo` VARCHAR(100), IN `p_telefono` VARCHAR(20), IN `p_carrera` VARCHAR(100), IN `p_id_usuario` INT, IN `p_cargo` VARCHAR(50), IN `p_acceso_sistema` TINYINT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_voluntario` (
+    IN `p_nombres` VARCHAR(100), 
+    IN `p_apellidos` VARCHAR(100), 
+    IN `p_dni` VARCHAR(20), 
+    IN `p_correo` VARCHAR(100), 
+    IN `p_telefono` VARCHAR(20), 
+    IN `p_carrera` VARCHAR(100), 
+    IN `p_id_usuario` INT, 
+    IN `p_cargo` VARCHAR(50), 
+    IN `p_acceso_sistema` TINYINT
+)   
+BEGIN
+    -- Validar duplicados
+    IF EXISTS (SELECT 1 FROM voluntario WHERE dni = p_dni) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El DNI ya está registrado';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM voluntario WHERE correo = p_correo) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El correo ya está registrado';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM voluntario WHERE telefono = p_telefono) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El teléfono ya está registrado';
+    END IF;
+
+    -- Insertar nuevo voluntario
     INSERT INTO voluntario (nombres, apellidos, dni, correo, telefono, carrera, cargo, acceso_sistema, estado, id_usuario)
     VALUES (p_nombres, p_apellidos, p_dni, p_correo, p_telefono, p_carrera,
             IFNULL(p_cargo, 'Voluntario'),
             IFNULL(p_acceso_sistema, 0),
             'ACTIVO', 
             IF(p_id_usuario > 0, p_id_usuario, NULL));
-    
+
     SELECT LAST_INSERT_ID() AS id_voluntario;
 END$$
 
@@ -1522,7 +1559,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_donacion_inventario` (
         FROM donante dnt
         WHERE LOWER(TRIM(dnt.nombre)) = LOWER(TRIM(p_donante_nombre))
           AND dnt.tipo = v_tipo_donante
-          AND (IFNULL(TRIM(dnt.correo), '') = IFNULL(TRIM(p_donante_correo), '') OR IFNULL(TRIM(dnt.telefono), '') = IFNULL(TRIM(p_donante_telefono), ''))
+          AND (IFNULL(TRIM(dnt.correo), '') = IFNULL(TRIM(p_donante_correo), '') OR IFNULL(TRIM(dnt.telefono), '') = IFNULL(TRIM(p_donante_telefono), '') OR IFNULL(TRIM(dnt.dni), '') = IFNULL(TRIM(p_donante_dni), '') )
         LIMIT 1;
 
         IF v_id_donante IS NULL THEN
@@ -2475,43 +2512,6 @@ CREATE TABLE `usuario` (
 
 INSERT INTO `usuario` (`id_usuario`, `nombres`, `apellidos`, `correo`, `username`, `dni`, `password_hash`, `foto_perfil`, `estado`, `creado_en`, `actualizado_en`, `intentos_fallidos`, `bloqueado_hasta`) VALUES
 (21, 'luis', 'goerdy', 'tchi@gamil.com', 'geordy', NULL, '$2a$10$gF/BXO.egDt/oEeSSZMzMu7IE5VWf9BmvIateoBiud8OiUNSPqFie', 'img/perfil_21.webp', 'ACTIVO', '2026-02-04 01:41:12', '2026-02-12 00:26:32', 0, NULL),
-(28, 'ROSA FIORELLA', 'VICUÑA MUNAYCO', 'rosa@gmail.con', 'rosa', NULL, '$2a$10$ALUOyQo6GeWeys6g3KTNUOTUtIB07EkIJgkqzWwEn0T81nmpcVMJ6', NULL, 'ACTIVO', '2026-02-23 10:45:16', '2026-02-23 10:45:16', 0, NULL);
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `usuario_permiso`
---
-
-CREATE TABLE `usuario_permiso` (
-  `id_usuario_permiso` int(11) NOT NULL,
-  `id_usuario` int(11) NOT NULL,
-  `id_permiso` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `usuario_permiso`
---
-
-INSERT INTO `usuario_permiso` (`id_usuario_permiso`, `id_usuario`, `id_permiso`) VALUES
-(70, 21, 1),
-(71, 21, 2),
-(72, 21, 3),
-(73, 21, 4),
-(74, 21, 5),
-(75, 21, 6),
-(76, 21, 7),
-(77, 21, 8),
-(78, 21, 9),
-(79, 21, 10),
-(80, 21, 11),
-(57, 28, 6),
-(58, 28, 7);
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `usuario_rol`
 --
 
 CREATE TABLE `usuario_rol` (
