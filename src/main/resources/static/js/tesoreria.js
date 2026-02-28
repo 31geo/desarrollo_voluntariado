@@ -179,7 +179,7 @@ async function filtrarMovimientos() {
     params.append("accion", "filtrar");
     if (tipo)      params.append("tipo", tipo);
     if (categoria) params.append("categoria", categoria);
-    if (fechaIni)  params.append("fechaIni", fechaIni);
+    if (fechaIni)  params.append("fechaInicio", fechaIni);
     if (fechaFin)  params.append("fechaFin", fechaFin);
 
     try {

@@ -27,7 +27,8 @@ public class TesoreriaRepositoryImpl implements TesoreriaRepositoryCustom {
             List<Object[]> rows = em.createNativeQuery("CALL sp_listarMovimientos()")
                     .getResultList();
             List<MovimientoFinanciero> lista = new ArrayList<>();
-            for (Object[] row : rows) lista.add(mapearMovimiento(row));
+            for (Object[] row : rows)
+                lista.add(mapearMovimiento(row));
             logger.info("Se listaron " + lista.size() + " movimientos financieros");
             return lista;
         } catch (Exception e) {
@@ -43,15 +44,15 @@ public class TesoreriaRepositoryImpl implements TesoreriaRepositoryCustom {
                     .getSingleResult();
             Map<String, Double> balance = new HashMap<>();
             balance.put("ingresos", ((Number) row[0]).doubleValue());
-            balance.put("gastos",   ((Number) row[1]).doubleValue());
-            balance.put("saldo",    ((Number) row[2]).doubleValue());
+            balance.put("gastos", ((Number) row[1]).doubleValue());
+            balance.put("saldo", ((Number) row[2]).doubleValue());
             return balance;
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error al obtener balance", e);
             Map<String, Double> vacio = new HashMap<>();
             vacio.put("ingresos", 0.0);
-            vacio.put("gastos",   0.0);
-            vacio.put("saldo",    0.0);
+            vacio.put("gastos", 0.0);
+            vacio.put("saldo", 0.0);
             return vacio;
         }
     }
@@ -60,15 +61,16 @@ public class TesoreriaRepositoryImpl implements TesoreriaRepositoryCustom {
     @SuppressWarnings("unchecked")
     public List<MovimientoFinanciero> filtrar(String tipo, String categoria, String fechaInicio, String fechaFin) {
         try {
-            String pTipo = tipo != null && !tipo.isEmpty() ? tipo : "";
-            String pCategoria = categoria != null && !categoria.isEmpty() ? categoria : "";
-            // Para fechas null, usamos fecha extrema para que el filtro no aplique
-            java.util.Date pFechaIni = (fechaInicio != null && !fechaInicio.isEmpty())
+            String pTipo = tipo != null && !tipo.trim().isEmpty() ? tipo : null;
+            String pCategoria = categoria != null && !categoria.trim().isEmpty() ? categoria : null;
+
+            // Si el string está vacío o nulo, pasamos null a SQL para que el SP lo ignore
+            java.sql.Date pFechaIni = (fechaInicio != null && !fechaInicio.trim().isEmpty())
                     ? java.sql.Date.valueOf(fechaInicio)
-                    : java.sql.Date.valueOf("1900-01-01");
-            java.util.Date pFechaFin = (fechaFin != null && !fechaFin.isEmpty())
+                    : null;
+            java.sql.Date pFechaFin = (fechaFin != null && !fechaFin.trim().isEmpty())
                     ? java.sql.Date.valueOf(fechaFin)
-                    : java.sql.Date.valueOf("2099-12-31");
+                    : null;
 
             List<Object[]> rows = em.createNativeQuery("CALL sp_filtrarMovimientos(?1, ?2, ?3, ?4)")
                     .setParameter(1, pTipo)
@@ -77,7 +79,8 @@ public class TesoreriaRepositoryImpl implements TesoreriaRepositoryCustom {
                     .setParameter(4, pFechaFin, jakarta.persistence.TemporalType.DATE)
                     .getResultList();
             List<MovimientoFinanciero> lista = new ArrayList<>();
-            for (Object[] row : rows) lista.add(mapearMovimiento(row));
+            for (Object[] row : rows)
+                lista.add(mapearMovimiento(row));
             return lista;
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error al filtrar movimientos", e);
@@ -131,9 +134,10 @@ public class TesoreriaRepositoryImpl implements TesoreriaRepositoryCustom {
 
     // ── HELPER ──────────────────────────────────────────────
 
-    // SP devuelve: id_movimiento[0], tipo[1], monto[2], descripcion[3], categoria[4],
-    //   comprobante[5], fecha_movimiento[6], actividad[7], id_actividad[8],
-    //   usuario_registro[9], creado_en[10]
+    // SP devuelve: id_movimiento[0], tipo[1], monto[2], descripcion[3],
+    // categoria[4],
+    // comprobante[5], fecha_movimiento[6], actividad[7], id_actividad[8],
+    // usuario_registro[9], creado_en[10]
     private MovimientoFinanciero mapearMovimiento(Object[] row) {
         MovimientoFinanciero mf = new MovimientoFinanciero();
         mf.setIdMovimiento(row[0] != null ? ((Number) row[0]).intValue() : 0);
