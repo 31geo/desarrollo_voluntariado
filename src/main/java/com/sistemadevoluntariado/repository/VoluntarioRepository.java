@@ -16,6 +16,6 @@ public interface VoluntarioRepository extends JpaRepository<Voluntario, Integer>
 
     Optional<Voluntario> findFirstByIdUsuarioOrderByIdVoluntarioDesc(int idUsuario);
 
-    @Query("SELECT v FROM Voluntario v WHERE v.accesoSistema = true AND v.idUsuario IS NULL ORDER BY v.nombres ASC")
+    @Query("SELECT v FROM Voluntario v WHERE v.accesoSistema = true AND v.idUsuario IS NULL AND v.cargo <> 'Voluntario' ORDER BY v.nombres ASC")
     List<Voluntario> obtenerVoluntariosConAcceso();
 }

@@ -81,7 +81,7 @@ public class VoluntarioController {
             String cargoFinal = (cargo != null && !cargo.isBlank()) ? cargo.trim() : "Voluntario";
             v.setCargo(cargoFinal);
             v.setAccesoSistema(CARGOS_CON_ACCESO.contains(cargoFinal));
-            v.setIdUsuario(usuario != null ? usuario.getIdUsuario() : null);
+            v.setIdUsuario(null);
 
             boolean ok = voluntarioService.crearVoluntario(v);
             resp.put("success", ok);
