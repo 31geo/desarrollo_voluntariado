@@ -221,4 +221,18 @@ public class VoluntarioController {
         }
         return resp;
     }
+
+    // ── Buscar voluntarios ──
+    @GetMapping(params = "action=buscar")
+    @ResponseBody
+    public List<Voluntario> buscar(
+            @RequestParam(required = false) String nombres,
+            @RequestParam(required = false) String apellidos,
+            @RequestParam(required = false) String dni,
+            @RequestParam(required = false) String correo,
+            @RequestParam(required = false) String telefono,
+            @RequestParam(required = false) String carrera,
+            @RequestParam(required = false) String cargo) {
+        return voluntarioService.buscarVoluntarios(nombres, apellidos, dni, correo, telefono, carrera, cargo);
+    }
 }

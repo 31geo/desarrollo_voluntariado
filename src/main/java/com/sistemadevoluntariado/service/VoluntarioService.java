@@ -83,4 +83,9 @@ public class VoluntarioService {
         }
         return voluntarioRepository.countByTelefono(telefono) > 0;
     }
+
+    @Transactional
+    public List<Voluntario> buscarVoluntarios(String nombres, String apellidos, String dni, String correo, String telefono, String carrera, String cargo) {
+        return voluntarioRepository.buscarVoluntarios(nombres, apellidos, dni, correo, telefono, carrera, cargo);
+    }
 }

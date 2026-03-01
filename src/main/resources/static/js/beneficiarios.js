@@ -72,12 +72,11 @@ function renderTabla() {
             <td>${esc(b.telefono || '—')}</td>
             <td><span class="estado-badge ${estadoCls}">${estadoTxt}</span></td>
             <td class="acciones-cell">
-                <button class="btn-icon ver" onclick="verDetalle(${b.idBeneficiario})" title="Ver detalle">👁</button>
                 <button class="btn-icon edit" onclick="abrirModalEditar(${b.idBeneficiario})" title="Editar">✎</button>
                 ${esActivo
-                ? `<button class="btn-icon disable" onclick="cambiarEstado(${b.idBeneficiario},'INACTIVO')" title="Desactivar">⊘</button>`
-                : `<button class="btn-icon enable"  onclick="cambiarEstado(${b.idBeneficiario},'ACTIVO')"   title="Activar">✓</button>`
-            }
+                    ? `<button class="btn-icon disable" onclick="cambiarEstado(${b.idBeneficiario},'INACTIVO')" title="Deshabilitar">⊘</button>`
+                    : `<button class="btn-icon enable"  onclick="cambiarEstado(${b.idBeneficiario},'ACTIVO')"   title="Habilitar">✓</button>`
+                }
             </td>
         </tr>`;
     }).join('');
@@ -344,3 +343,72 @@ document.addEventListener('click', e => {
     if (e.target === document.getElementById('modalBeneficiario')) cerrarModal();
     if (e.target === document.getElementById('modalDetalle')) cerrarModalDetalle();
 });
+
+/* =====================================================================
+   FILTROS DE BÚSQUEDA
+   ===================================================================== */
+function filtrarBeneficiarios() {
+    const filtroGeneral = document.getElementById('filtroGeneral').value.toLowerCase();
+    const filtroEstado = document.getElementById('filtroEstado').value;
+
+    const beneficiariosFiltrados = todosBeneficiarios.filter(b => {
+        const cumpleFiltroGeneral = filtroGeneral === '' || 
+            (b.organizacion && b.organizacion.toLowerCase().includes(filtroGeneral)) ||
+            (b.direccion && b.direccion.toLowerCase().includes(filtroGeneral)) ||
+            (b.distrito && b.distrito.toLowerCase().includes(filtroGeneral)) ||
+            (b.necesidadPrincipal && b.necesidadPrincipal.toLowerCase().includes(filtroGeneral)) ||
+            (b.observaciones && b.observaciones.toLowerCase().includes(filtroGeneral)) ||
+            (b.nombreResponsable && b.nombreResponsable.toLowerCase().includes(filtroGeneral)) ||
+            (b.apellidosResponsable && b.apellidosResponsable.toLowerCase().includes(filtroGeneral)) ||
+            (b.dni && b.dni.toLowerCase().includes(filtroGeneral)) ||
+            (b.telefono && b.telefono.toLowerCase().includes(filtroGeneral));
+
+        const cumpleFiltroEstado = filtroEstado === '' || (b.estado && b.estado.toUpperCase() === filtroEstado);
+
+        return cumpleFiltroGeneral && cumpleFiltroEstado;
+    });
+
+    renderTablaFiltrada(beneficiariosFiltrados);
+}
+
+function renderTablaFiltrada(beneficiarios) {
+    const tbody = document.getElementById('beneficiarios-tbody');
+    if (!tbody) return;
+
+    if (beneficiarios.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:2rem; color:#999;">No se encontraron resultados</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = beneficiarios.map(b => {
+        const esActivo = (b.estado || '').toUpperCase() === 'ACTIVO';
+        const estadoCls = esActivo ? 'activo' : 'inactivo';
+        const estadoTxt = esActivo ? 'ACTIVO' : 'INACTIVO';
+
+        return `<tr class="beneficiario-row" data-id="${b.idBeneficiario}">
+            <td>${esc(b.organizacion)}</td>
+            <td>${esc(b.direccion)}</td>
+            <td>${esc(b.distrito)}</td>
+            <td>${esc(b.necesidadPrincipal)}</td>
+            <td>${esc(b.observaciones || '-')}</td>
+            <td>${esc(b.nombreResponsable)}</td>
+            <td>${esc(b.apellidosResponsable)}</td>
+            <td>${esc(b.dni)}</td>
+            <td>${esc(b.telefono)}</td>
+            <td><span class="estado-badge ${estadoCls}">${estadoTxt}</span></td>
+            <td class="acciones-cell">
+                <button class="btn-icon edit" onclick="abrirModalEditar(${b.idBeneficiario})" title="Editar">✎</button>
+                ${esActivo
+                    ? `<button class="btn-icon disable" onclick="cambiarEstado(${b.idBeneficiario},'INACTIVO')" title="Deshabilitar">⊘</button>`
+                    : `<button class="btn-icon enable"  onclick="cambiarEstado(${b.idBeneficiario},'ACTIVO')"   title="Habilitar">✓</button>`
+                }
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function limpiarFiltros() {
+    document.getElementById('filtroGeneral').value = '';
+    document.getElementById('filtroEstado').value = '';
+    filtrarBeneficiarios();
+}
