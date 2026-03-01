@@ -43,15 +43,19 @@ function initFiltros() {
 }
 
 function aplicarFiltros() {
-    const correo = (document.getElementById('filtroCorreo')?.value || '').toLowerCase().trim();
+    const filtro = (document.getElementById('filtroCorreo')?.value || '').toLowerCase().trim();
     const estado = (document.getElementById('filtroEstado')?.value || '').toUpperCase().trim();
     const fecha  = (document.getElementById('filtroFecha')?.value || '').trim();
 
     usuariosFiltrados = todosUsuarios.filter(u => {
-        const coincideCorreo = !correo || (u.correo || '').toLowerCase().includes(correo);
+        const coincideFiltro = !filtro || 
+            (u.correo || '').toLowerCase().includes(filtro) ||
+            (u.username || '').toLowerCase().includes(filtro) ||
+            (u.nombreRol || '').toLowerCase().includes(filtro) ||
+            (u.estado || '').toLowerCase().includes(filtro);
         const coincideEstado = !estado || (u.estado || '').toUpperCase() === estado;
         const coincideFecha  = !fecha  || (u.creadoEn || '').slice(0, 10) === fecha;
-        return coincideCorreo && coincideEstado && coincideFecha;
+        return coincideFiltro && coincideEstado && coincideFecha;
     });
 
     paginaActual = 1;
