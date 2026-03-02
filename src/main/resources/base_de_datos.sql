@@ -400,7 +400,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_buscar_donaciones_disponibles` (
         td.nombre AS tipo_donacion,
         td.id_tipo_donacion,
         COALESCE(a.nombre, 'Sin actividad') AS actividad_origen,
-        COALESCE(dn.nombre, 'AN├ôNIMO') AS donante
+        COALESCE(dn.nombre, 'ANONIMO') AS donante
     FROM donacion d
     INNER JOIN tipo_donacion td ON td.id_tipo_donacion = d.id_tipo_donacion
     LEFT JOIN actividades a ON a.id_actividad = d.id_actividad
@@ -408,9 +408,9 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_buscar_donaciones_disponibles` (
     LEFT JOIN donante dn ON dn.id_donante = dd.id_donante
     WHERE d.estado IN ('CONFIRMADO', 'ACTIVO')
       AND (
-          CAST(d.id_donacion AS CHAR) LIKE CONCAT('%', @buscar, '%')
+          CAST(d.id_donacion AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci LIKE CONCAT('%', @buscar, '%')
           OR COALESCE(dn.nombre, '') COLLATE utf8mb4_general_ci LIKE CONCAT('%', @buscar, '%')
-          OR CAST(d.cantidad AS CHAR) LIKE CONCAT('%', @buscar, '%')
+          OR CAST(d.cantidad AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci LIKE CONCAT('%', @buscar, '%')
           OR COALESCE(d.descripcion, '') COLLATE utf8mb4_general_ci LIKE CONCAT('%', @buscar, '%')
       )
     HAVING saldo_disponible > 0

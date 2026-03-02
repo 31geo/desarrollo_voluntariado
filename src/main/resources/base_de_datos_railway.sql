@@ -1,4 +1,4 @@
-﻿-- phpMyAdmin SQL Dump
+﻿﻿-- phpMyAdmin SQL Dump
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
@@ -408,9 +408,9 @@ CREATE PROCEDURE `sp_buscar_donaciones_disponibles` (IN `p_query` VARCHAR(100)) 
     LEFT JOIN donante dn ON dn.id_donante = dd.id_donante
     WHERE d.estado IN ('CONFIRMADO', 'ACTIVO')
       AND (
-          CAST(d.id_donacion AS CHAR) LIKE CONCAT('%', @buscar, '%')
+          CAST(d.id_donacion AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci LIKE CONCAT('%', @buscar, '%')
           OR COALESCE(dn.nombre, '') COLLATE utf8mb4_general_ci LIKE CONCAT('%', @buscar, '%')
-          OR CAST(d.cantidad AS CHAR) LIKE CONCAT('%', @buscar, '%')
+          OR CAST(d.cantidad AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci LIKE CONCAT('%', @buscar, '%')
           OR COALESCE(d.descripcion, '') COLLATE utf8mb4_general_ci LIKE CONCAT('%', @buscar, '%')
       )
     HAVING saldo_disponible > 0
