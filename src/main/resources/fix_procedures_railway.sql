@@ -19,17 +19,14 @@ CREATE PROCEDURE `sp_crear_usuario` (
     IN `p_password_hash` VARCHAR(255)
 )
 BEGIN
-    -- Validar si el usuario ya existe por username, correo o DNI
     IF EXISTS (SELECT 1 FROM usuario WHERE username = p_username OR correo = p_correo OR dni = p_dni) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El usuario, correo o DNI ya existe';
+        -- Devolver 0 para indicar que ya existe (sin lanzar excepcion que marcaría rollback-only en Hibernate)
+        SELECT 0 AS id_usuario;
     ELSE
-        -- Insertar el nuevo usuario
         INSERT INTO usuario (nombres, apellidos, correo, username, dni, password_hash, estado, creado_en)
         VALUES (p_nombres, p_apellidos, p_correo, p_username, p_dni, p_password_hash, 'ACTIVO', NOW());
+        SELECT LAST_INSERT_ID() AS id_usuario;
     END IF;
-
-    -- Devolver el ID del usuario insertado
-    SELECT LAST_INSERT_ID() AS id_usuario;
 END$$
 
 -- --------------------------------------------------------
