@@ -1,4 +1,4 @@
--- phpMyAdmin SQL Dump
+﻿-- phpMyAdmin SQL Dump
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
@@ -25,7 +25,7 @@ DELIMITER $$
 --
 -- Procedimientos
 --
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actividades_por_mes` ()   BEGIN
+CREATE PROCEDURE `sp_actividades_por_mes` ()   BEGIN
     SELECT 
         DATE_FORMAT(m.mes, '%Y-%m') AS mes,
         DATE_FORMAT(m.mes, '%b') AS nombre_mes,
@@ -43,7 +43,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actividades_por_mes` ()   BEGIN
     ORDER BY m.mes ASC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizarDonacion` (IN `p_id_donacion` INT, IN `p_cantidad` DOUBLE, IN `p_descripcion` VARCHAR(150), IN `p_id_tipo_donacion` INT, IN `p_id_actividad` INT)   BEGIN
+CREATE PROCEDURE `sp_actualizarDonacion` (IN `p_id_donacion` INT, IN `p_cantidad` DOUBLE, IN `p_descripcion` VARCHAR(150), IN `p_id_tipo_donacion` INT, IN `p_id_actividad` INT)   BEGIN
     UPDATE donacion
     SET cantidad = p_cantidad,
         descripcion = p_descripcion,
@@ -54,7 +54,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizarDonacion` (IN `p_id_do
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizarMovimiento` (IN `p_id` INT, IN `p_tipo` VARCHAR(10), IN `p_monto` DECIMAL(12,2), IN `p_descripcion` VARCHAR(255), IN `p_categoria` VARCHAR(60), IN `p_comprobante` VARCHAR(100), IN `p_fecha` DATE, IN `p_id_actividad` INT)   BEGIN
+CREATE PROCEDURE `sp_actualizarMovimiento` (IN `p_id` INT, IN `p_tipo` VARCHAR(10), IN `p_monto` DECIMAL(12,2), IN `p_descripcion` VARCHAR(255), IN `p_categoria` VARCHAR(60), IN `p_comprobante` VARCHAR(100), IN `p_fecha` DATE, IN `p_id_actividad` INT)   BEGIN
     UPDATE movimiento_financiero
     SET tipo              = p_tipo,
         monto             = p_monto,
@@ -68,7 +68,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizarMovimiento` (IN `p_id`
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_actividad` (IN `p_id` INT, IN `p_nombre` VARCHAR(200), IN `p_descripcion` TEXT, IN `p_fecha_inicio` DATE, IN `p_fecha_fin` DATE, IN `p_ubicacion` VARCHAR(300), IN `p_cupo_maximo` INT)   BEGIN
+CREATE PROCEDURE `sp_actualizar_actividad` (IN `p_id` INT, IN `p_nombre` VARCHAR(200), IN `p_descripcion` TEXT, IN `p_fecha_inicio` DATE, IN `p_fecha_fin` DATE, IN `p_ubicacion` VARCHAR(300), IN `p_cupo_maximo` INT)   BEGIN
     UPDATE actividades
     SET nombre       = p_nombre,
         descripcion  = p_descripcion,
@@ -79,7 +79,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_actividad` (IN `p_id`
     WHERE id_actividad = p_id;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_asistencia` (IN `p_id_asistencia` INT, IN `p_hora_entrada` TIME, IN `p_hora_salida` TIME, IN `p_estado` VARCHAR(20), IN `p_observaciones` TEXT)   BEGIN
+CREATE PROCEDURE `sp_actualizar_asistencia` (IN `p_id_asistencia` INT, IN `p_hora_entrada` TIME, IN `p_hora_salida` TIME, IN `p_estado` VARCHAR(20), IN `p_observaciones` TEXT)   BEGIN
     DECLARE v_horas DECIMAL(5,2) DEFAULT 0.00;
 
     IF p_hora_entrada IS NOT NULL AND p_hora_salida IS NOT NULL THEN
@@ -100,7 +100,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_asistencia` (IN `p_id
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_beneficiario_nuevo` (IN `p_id_beneficiario` INT, IN `p_organizacion` VARCHAR(255), IN `p_direccion` VARCHAR(255), IN `p_distrito` VARCHAR(100), IN `p_necesidad_principal` VARCHAR(100), IN `p_observaciones` TEXT, IN `p_nombre_responsable` VARCHAR(100), IN `p_apellidos_responsable` VARCHAR(100), IN `p_dni` VARCHAR(20), IN `p_telefono` VARCHAR(20))   BEGIN
+CREATE PROCEDURE `sp_actualizar_beneficiario_nuevo` (IN `p_id_beneficiario` INT, IN `p_organizacion` VARCHAR(255), IN `p_direccion` VARCHAR(255), IN `p_distrito` VARCHAR(100), IN `p_necesidad_principal` VARCHAR(100), IN `p_observaciones` TEXT, IN `p_nombre_responsable` VARCHAR(100), IN `p_apellidos_responsable` VARCHAR(100), IN `p_dni` VARCHAR(20), IN `p_telefono` VARCHAR(20))   BEGIN
     UPDATE beneficiario SET
         organizacion = p_organizacion,
         direccion = p_direccion,
@@ -114,7 +114,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_beneficiario_nuevo` (
     WHERE id_beneficiario = p_id_beneficiario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_cubierta_recurso_campana` (IN `p_id` INT, IN `p_cantidad_cubierta` DOUBLE)   BEGIN
+CREATE PROCEDURE `sp_actualizar_cubierta_recurso_campana` (IN `p_id` INT, IN `p_cantidad_cubierta` DOUBLE)   BEGIN
     DECLARE v_requerida DOUBLE DEFAULT 0;
     DECLARE v_estado VARCHAR(20);
 
@@ -135,7 +135,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_cubierta_recurso_camp
     SELECT ROW_COUNT() AS filas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_detalle_especie` (IN `p_id_donacion` INT, IN `p_cantidad` DECIMAL(10,2), IN `p_observacion` VARCHAR(255))   BEGIN
+CREATE PROCEDURE `sp_actualizar_detalle_especie` (IN `p_id_donacion` INT, IN `p_cantidad` DECIMAL(10,2), IN `p_observacion` VARCHAR(255))   BEGIN
     UPDATE donacion_detalle
     SET cantidad = p_cantidad,
         observacion = p_observacion
@@ -144,7 +144,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_detalle_especie` (IN 
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_donacion_inventario` (IN `p_id_donacion` INT, IN `p_cantidad` DECIMAL(10,2), IN `p_descripcion` VARCHAR(150), IN `p_subtipo_donacion` VARCHAR(50), IN `p_id_actividad` INT, IN `p_donacion_anonima` TINYINT, IN `p_donante_tipo` VARCHAR(20), IN `p_donante_nombre` VARCHAR(150), IN `p_donante_correo` VARCHAR(100), IN `p_donante_telefono` VARCHAR(30), IN `p_donante_dni` VARCHAR(20), IN `p_donante_ruc` VARCHAR(20), IN `p_id_usuario_edicion` INT, IN `p_motivo_edicion` VARCHAR(255))   BEGIN
+CREATE PROCEDURE `sp_actualizar_donacion_inventario` (IN `p_id_donacion` INT, IN `p_cantidad` DECIMAL(10,2), IN `p_descripcion` VARCHAR(150), IN `p_subtipo_donacion` VARCHAR(50), IN `p_id_actividad` INT, IN `p_donacion_anonima` TINYINT, IN `p_donante_tipo` VARCHAR(20), IN `p_donante_nombre` VARCHAR(150), IN `p_donante_correo` VARCHAR(100), IN `p_donante_telefono` VARCHAR(30), IN `p_donante_dni` VARCHAR(20), IN `p_donante_ruc` VARCHAR(20), IN `p_id_usuario_edicion` INT, IN `p_motivo_edicion` VARCHAR(255))   BEGIN
     DECLARE v_tipo INT;
     DECLARE v_id_donante INT DEFAULT NULL;
     DECLARE v_tipo_donante VARCHAR(20) DEFAULT NULL;
@@ -218,14 +218,14 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_donacion_inventario` 
     COMMIT;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_foto_perfil` (IN `p_id_usuario` INT, IN `p_foto_perfil` VARCHAR(255))   BEGIN
+CREATE PROCEDURE `sp_actualizar_foto_perfil` (IN `p_id_usuario` INT, IN `p_foto_perfil` VARCHAR(255))   BEGIN
     UPDATE usuario
     SET foto_perfil = p_foto_perfil,
         actualizado_en = NOW()
     WHERE id_usuario = p_id_usuario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_item_inventario` (IN `p_id_item` INT, IN `p_nombre` VARCHAR(150), IN `p_categoria` VARCHAR(50), IN `p_unidad_medida` VARCHAR(30), IN `p_stock_minimo` DECIMAL(10,2), IN `p_observacion` VARCHAR(255))   BEGIN
+CREATE PROCEDURE `sp_actualizar_item_inventario` (IN `p_id_item` INT, IN `p_nombre` VARCHAR(150), IN `p_categoria` VARCHAR(50), IN `p_unidad_medida` VARCHAR(30), IN `p_stock_minimo` DECIMAL(10,2), IN `p_observacion` VARCHAR(255))   BEGIN
     UPDATE inventario_item
     SET nombre = TRIM(p_nombre),
         categoria = UPPER(TRIM(p_categoria)),
@@ -238,7 +238,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_item_inventario` (IN 
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_recurso_campana` (IN `p_id` INT, IN `p_id_actividad` INT, IN `p_id_item` INT, IN `p_cantidad_requerida` DOUBLE, IN `p_cantidad_cubierta` DOUBLE, IN `p_unidad` VARCHAR(50), IN `p_estado` VARCHAR(20), IN `p_observaciones` TEXT)   BEGIN
+CREATE PROCEDURE `sp_actualizar_recurso_campana` (IN `p_id` INT, IN `p_id_actividad` INT, IN `p_id_item` INT, IN `p_cantidad_requerida` DOUBLE, IN `p_cantidad_cubierta` DOUBLE, IN `p_unidad` VARCHAR(50), IN `p_estado` VARCHAR(20), IN `p_observaciones` TEXT)   BEGIN
     UPDATE recurso_campana
     SET id_actividad = p_id_actividad,
         id_item = p_id_item,
@@ -251,7 +251,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_recurso_campana` (IN 
     SELECT ROW_COUNT() AS filas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_salida_donacion` (IN `p_id_salida` INT, IN `p_id_actividad` INT, IN `p_cantidad` DOUBLE, IN `p_descripcion` TEXT, IN `p_id_item` INT, IN `p_cantidad_item` DOUBLE)   BEGIN
+CREATE PROCEDURE `sp_actualizar_salida_donacion` (IN `p_id_salida` INT, IN `p_id_actividad` INT, IN `p_cantidad` DOUBLE, IN `p_descripcion` TEXT, IN `p_id_item` INT, IN `p_cantidad_item` DOUBLE)   BEGIN
     UPDATE salida_donacion
     SET id_actividad = p_id_actividad,
         cantidad = p_cantidad,
@@ -263,7 +263,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_salida_donacion` (IN 
       AND estado = 'PENDIENTE';
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_usuario` (IN `p_id_usuario` INT, IN `p_nombres` VARCHAR(100), IN `p_apellidos` VARCHAR(100), IN `p_correo` VARCHAR(100), IN `p_username` VARCHAR(60), IN `p_dni` VARCHAR(20))   BEGIN
+CREATE PROCEDURE `sp_actualizar_usuario` (IN `p_id_usuario` INT, IN `p_nombres` VARCHAR(100), IN `p_apellidos` VARCHAR(100), IN `p_correo` VARCHAR(100), IN `p_username` VARCHAR(60), IN `p_dni` VARCHAR(20))   BEGIN
     UPDATE usuario
     SET nombres = p_nombres,
         apellidos = p_apellidos,
@@ -276,7 +276,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_usuario` (IN `p_id_us
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_voluntario` (IN `p_id_voluntario` INT, IN `p_nombres` VARCHAR(100), IN `p_apellidos` VARCHAR(100), IN `p_dni` VARCHAR(20), IN `p_correo` VARCHAR(100), IN `p_telefono` VARCHAR(20), IN `p_carrera` VARCHAR(100))   BEGIN
+CREATE PROCEDURE `sp_actualizar_voluntario` (IN `p_id_voluntario` INT, IN `p_nombres` VARCHAR(100), IN `p_apellidos` VARCHAR(100), IN `p_dni` VARCHAR(20), IN `p_correo` VARCHAR(100), IN `p_telefono` VARCHAR(20), IN `p_carrera` VARCHAR(100))   BEGIN
     UPDATE voluntario
     SET nombres = p_nombres,
         apellidos = p_apellidos,
@@ -289,7 +289,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_voluntario` (IN `p_id
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_anular_certificado` (IN `p_id_certificado` INT, IN `p_motivo_anulacion` TEXT)   BEGIN
+CREATE PROCEDURE `sp_anular_certificado` (IN `p_id_certificado` INT, IN `p_motivo_anulacion` TEXT)   BEGIN
     UPDATE certificados
     SET 
         estado = 'ANULADO',
@@ -300,7 +300,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_anular_certificado` (IN `p_id_ce
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_anular_donacion_inventario` (IN `p_id_donacion` INT, IN `p_id_usuario_anula` INT, IN `p_motivo` VARCHAR(255))   BEGIN
+CREATE PROCEDURE `sp_anular_donacion_inventario` (IN `p_id_donacion` INT, IN `p_id_usuario_anula` INT, IN `p_motivo` VARCHAR(255))   BEGIN
     DECLARE v_tipo INT;
     DECLARE v_item INT;
     DECLARE v_cantidad DECIMAL(10,2);
@@ -378,7 +378,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_anular_donacion_inventario` (IN 
     COMMIT;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_anular_salida_donacion` (IN `p_id_salida` INT, IN `p_id_usuario` INT, IN `p_motivo` VARCHAR(250))   BEGIN
+CREATE PROCEDURE `sp_anular_salida_donacion` (IN `p_id_salida` INT, IN `p_id_usuario` INT, IN `p_motivo` VARCHAR(250))   BEGIN
     UPDATE salida_donacion
     SET estado = 'ANULADO',
         anulado_en = NOW(),
@@ -388,7 +388,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_anular_salida_donacion` (IN `p_i
       AND estado != 'ANULADO';
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_anular_salida_inventario` (IN `p_id_salida_inv` INT, IN `p_id_usuario` INT, IN `p_motivo` VARCHAR(255))   BEGIN
+CREATE PROCEDURE `sp_anular_salida_inventario` (IN `p_id_salida_inv` INT, IN `p_id_usuario` INT, IN `p_motivo` VARCHAR(255))   BEGIN
     
     UPDATE inventario_item i
     JOIN salida_inventario_detalle d ON i.id_item = d.id_item
@@ -405,7 +405,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_anular_salida_inventario` (IN `p
     SELECT 1 AS resultado;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_buscar_donaciones_disponibles` (IN `p_query` VARCHAR(100))   BEGIN
+CREATE PROCEDURE `sp_buscar_donaciones_disponibles` (IN `p_query` VARCHAR(100))   BEGIN
     SET @buscar = CONVERT(p_query USING utf8mb4) COLLATE utf8mb4_general_ci;
     SELECT
         d.id_donacion,
@@ -436,23 +436,23 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_buscar_donaciones_disponibles` (
     LIMIT 20;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cambiar_estado_actividad` (IN `p_id` INT, IN `p_estado` VARCHAR(20))   BEGIN
+CREATE PROCEDURE `sp_cambiar_estado_actividad` (IN `p_id` INT, IN `p_estado` VARCHAR(20))   BEGIN
     UPDATE actividades
     SET estado = p_estado
     WHERE id_actividad = p_id;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cambiar_estado_beneficiario` (IN `p_id_beneficiario` INT, IN `p_estado` VARCHAR(10))   BEGIN
+CREATE PROCEDURE `sp_cambiar_estado_beneficiario` (IN `p_id_beneficiario` INT, IN `p_estado` VARCHAR(10))   BEGIN
     UPDATE beneficiario
     SET estado = p_estado
     WHERE id_beneficiario = p_id_beneficiario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cambiar_estado_beneficiario_nuevo` (IN `p_id_beneficiario` INT, IN `p_estado` VARCHAR(10))   BEGIN
+CREATE PROCEDURE `sp_cambiar_estado_beneficiario_nuevo` (IN `p_id_beneficiario` INT, IN `p_estado` VARCHAR(10))   BEGIN
     UPDATE beneficiario SET estado = p_estado WHERE id_beneficiario = p_id_beneficiario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cambiar_estado_donacion` (IN `p_id_donacion` INT, IN `p_estado` VARCHAR(20))   BEGIN
+CREATE PROCEDURE `sp_cambiar_estado_donacion` (IN `p_id_donacion` INT, IN `p_estado` VARCHAR(20))   BEGIN
     UPDATE donacion
     SET estado = p_estado,
         actualizado_en = NOW()
@@ -461,7 +461,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cambiar_estado_donacion` (IN `p_
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cambiar_estado_inventario` (IN `p_id_item` INT, IN `p_estado` VARCHAR(20))   BEGIN
+CREATE PROCEDURE `sp_cambiar_estado_inventario` (IN `p_id_item` INT, IN `p_estado` VARCHAR(20))   BEGIN
     UPDATE inventario_item
     SET estado = UPPER(p_estado),
         actualizado_en = NOW()
@@ -470,7 +470,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cambiar_estado_inventario` (IN `
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cambiar_estado_salida` (IN `p_id_salida` INT, IN `p_estado` VARCHAR(20))   BEGIN
+CREATE PROCEDURE `sp_cambiar_estado_salida` (IN `p_id_salida` INT, IN `p_estado` VARCHAR(20))   BEGIN
     UPDATE salida_donacion
     SET estado = p_estado,
         actualizado_en = NOW()
@@ -478,7 +478,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cambiar_estado_salida` (IN `p_id
     SELECT ROW_COUNT() AS affected;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cambiar_estado_usuario` (IN `p_id_usuario` INT, IN `p_estado` VARCHAR(20))   BEGIN
+CREATE PROCEDURE `sp_cambiar_estado_usuario` (IN `p_id_usuario` INT, IN `p_estado` VARCHAR(20))   BEGIN
     UPDATE usuario
     SET estado = p_estado,
         actualizado_en = NOW()
@@ -487,7 +487,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cambiar_estado_usuario` (IN `p_i
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cambiar_estado_voluntario` (IN `p_id_voluntario` INT, IN `p_estado` VARCHAR(20))   BEGIN
+CREATE PROCEDURE `sp_cambiar_estado_voluntario` (IN `p_id_voluntario` INT, IN `p_estado` VARCHAR(20))   BEGIN
     UPDATE voluntario
     SET estado = p_estado
     WHERE id_voluntario = p_id_voluntario;
@@ -495,7 +495,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cambiar_estado_voluntario` (IN `
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_certificados_por_voluntario` (IN `p_id_voluntario` INT)   BEGIN
+CREATE PROCEDURE `sp_certificados_por_voluntario` (IN `p_id_voluntario` INT)   BEGIN
     SELECT 
         c.id_certificado,
         c.codigo_certificado,
@@ -518,23 +518,23 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_certificados_por_voluntario` (IN
     ORDER BY c.fecha_emision DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_contar_notificaciones_no_leidas` (IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_contar_notificaciones_no_leidas` (IN `p_id_usuario` INT)   BEGIN
     SELECT COUNT(*) AS total FROM notificaciones
     WHERE id_usuario = p_id_usuario AND leida = 0;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_contar_stock_bajo` ()   BEGIN
+CREATE PROCEDURE `sp_contar_stock_bajo` ()   BEGIN
     SELECT COUNT(*) AS total
     FROM inventario_item
     WHERE estado = 'ACTIVO' AND stock_actual <= stock_minimo;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_actividad` (IN `p_nombre` VARCHAR(200), IN `p_descripcion` TEXT, IN `p_fecha_inicio` DATE, IN `p_fecha_fin` DATE, IN `p_ubicacion` VARCHAR(300), IN `p_cupo_maximo` INT, IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_crear_actividad` (IN `p_nombre` VARCHAR(200), IN `p_descripcion` TEXT, IN `p_fecha_inicio` DATE, IN `p_fecha_fin` DATE, IN `p_ubicacion` VARCHAR(300), IN `p_cupo_maximo` INT, IN `p_id_usuario` INT)   BEGIN
     INSERT INTO actividades (nombre, descripcion, fecha_inicio, fecha_fin, ubicacion, cupo_maximo, id_usuario)
     VALUES (p_nombre, p_descripcion, p_fecha_inicio, p_fecha_fin, p_ubicacion, p_cupo_maximo, p_id_usuario);
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_beneficiario_nuevo` (IN `p_organizacion` VARCHAR(255), IN `p_direccion` VARCHAR(255), IN `p_distrito` VARCHAR(100), IN `p_necesidad_principal` VARCHAR(100), IN `p_observaciones` TEXT, IN `p_nombre_responsable` VARCHAR(100), IN `p_apellidos_responsable` VARCHAR(100), IN `p_dni` VARCHAR(20), IN `p_telefono` VARCHAR(20), IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_crear_beneficiario_nuevo` (IN `p_organizacion` VARCHAR(255), IN `p_direccion` VARCHAR(255), IN `p_distrito` VARCHAR(100), IN `p_necesidad_principal` VARCHAR(100), IN `p_observaciones` TEXT, IN `p_nombre_responsable` VARCHAR(100), IN `p_apellidos_responsable` VARCHAR(100), IN `p_dni` VARCHAR(20), IN `p_telefono` VARCHAR(20), IN `p_id_usuario` INT)   BEGIN
     INSERT INTO beneficiario (
         organizacion, direccion, distrito, necesidad_principal, observaciones,
         nombre_responsable, apellidos_responsable, dni, telefono, estado, id_usuario
@@ -545,7 +545,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_beneficiario_nuevo` (IN `p
     SELECT LAST_INSERT_ID() AS id_beneficiario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_certificado` (IN `p_codigo_certificado` VARCHAR(50), IN `p_id_voluntario` INT, IN `p_id_actividad` INT, IN `p_horas_voluntariado` INT, IN `p_observaciones` TEXT, IN `p_id_usuario_emite` INT)   BEGIN
+CREATE PROCEDURE `sp_crear_certificado` (IN `p_codigo_certificado` VARCHAR(50), IN `p_id_voluntario` INT, IN `p_id_actividad` INT, IN `p_horas_voluntariado` INT, IN `p_observaciones` TEXT, IN `p_id_usuario_emite` INT)   BEGIN
     
     DECLARE v_codigo VARCHAR(50);
     DECLARE v_anio INT;
@@ -588,24 +588,24 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_certificado` (IN `p_codigo
     SELECT LAST_INSERT_ID() AS id_certificado, v_codigo AS codigo_certificado;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_evento` (IN `p_titulo` VARCHAR(200), IN `p_descripcion` TEXT, IN `p_fecha_inicio` DATE, IN `p_fecha_fin` DATE, IN `p_color` VARCHAR(20), IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_crear_evento` (IN `p_titulo` VARCHAR(200), IN `p_descripcion` TEXT, IN `p_fecha_inicio` DATE, IN `p_fecha_fin` DATE, IN `p_color` VARCHAR(20), IN `p_id_usuario` INT)   BEGIN
     INSERT INTO eventos_calendario (titulo, descripcion, fecha_inicio, fecha_fin, color, id_usuario)
     VALUES (p_titulo, p_descripcion, p_fecha_inicio, p_fecha_fin, IFNULL(p_color, '#6366f1'), p_id_usuario);
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_item_inventario` (IN `p_nombre` VARCHAR(150), IN `p_categoria` VARCHAR(50), IN `p_unidad_medida` VARCHAR(30), IN `p_stock_minimo` DECIMAL(10,2), IN `p_observacion` VARCHAR(255))   BEGIN
+CREATE PROCEDURE `sp_crear_item_inventario` (IN `p_nombre` VARCHAR(150), IN `p_categoria` VARCHAR(50), IN `p_unidad_medida` VARCHAR(30), IN `p_stock_minimo` DECIMAL(10,2), IN `p_observacion` VARCHAR(255))   BEGIN
     INSERT INTO inventario_item(nombre, categoria, unidad_medida, stock_actual, stock_minimo, estado, observacion, creado_en, actualizado_en)
     VALUES(TRIM(p_nombre), UPPER(TRIM(p_categoria)), LOWER(TRIM(p_unidad_medida)), 0, IFNULL(p_stock_minimo, 0), 'ACTIVO', p_observacion, NOW(), NOW());
 
     SELECT LAST_INSERT_ID() AS id_item;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_notificacion` (IN `p_id_usuario` INT, IN `p_tipo` VARCHAR(30), IN `p_titulo` VARCHAR(200), IN `p_mensaje` TEXT, IN `p_icono` VARCHAR(50), IN `p_color` VARCHAR(20), IN `p_referencia_id` INT)   BEGIN
+CREATE PROCEDURE `sp_crear_notificacion` (IN `p_id_usuario` INT, IN `p_tipo` VARCHAR(30), IN `p_titulo` VARCHAR(200), IN `p_mensaje` TEXT, IN `p_icono` VARCHAR(50), IN `p_color` VARCHAR(20), IN `p_referencia_id` INT)   BEGIN
     INSERT INTO notificaciones (id_usuario, tipo, titulo, mensaje, icono, color, referencia_id)
     VALUES (p_id_usuario, p_tipo, p_titulo, p_mensaje, p_icono, p_color, p_referencia_id);
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_usuario` (IN `p_nombres` VARCHAR(100), IN `p_apellidos` VARCHAR(100), IN `p_correo` VARCHAR(100), IN `p_username` VARCHAR(60), IN `p_dni` VARCHAR(20), IN `p_password_hash` VARCHAR(255))   BEGIN
+CREATE PROCEDURE `sp_crear_usuario` (IN `p_nombres` VARCHAR(100), IN `p_apellidos` VARCHAR(100), IN `p_correo` VARCHAR(100), IN `p_username` VARCHAR(60), IN `p_dni` VARCHAR(20), IN `p_password_hash` VARCHAR(255))   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         -- Manejo de errores: rollback en caso de fallo
@@ -629,7 +629,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_usuario` (IN `p_nombres` V
     COMMIT;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_voluntario` (IN `p_nombres` VARCHAR(100), IN `p_apellidos` VARCHAR(100), IN `p_dni` VARCHAR(20), IN `p_correo` VARCHAR(100), IN `p_telefono` VARCHAR(20), IN `p_carrera` VARCHAR(100), IN `p_id_usuario` INT, IN `p_cargo` VARCHAR(50), IN `p_acceso_sistema` TINYINT)   BEGIN
+CREATE PROCEDURE `sp_crear_voluntario` (IN `p_nombres` VARCHAR(100), IN `p_apellidos` VARCHAR(100), IN `p_dni` VARCHAR(20), IN `p_correo` VARCHAR(100), IN `p_telefono` VARCHAR(20), IN `p_carrera` VARCHAR(100), IN `p_id_usuario` INT, IN `p_cargo` VARCHAR(50), IN `p_acceso_sistema` TINYINT)   BEGIN
     INSERT INTO voluntario (nombres, apellidos, dni, correo, telefono, carrera, cargo, acceso_sistema, estado, id_usuario)
     VALUES (p_nombres, p_apellidos, p_dni, p_correo, p_telefono, p_carrera,
             IFNULL(p_cargo, 'Voluntario'),
@@ -640,7 +640,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_voluntario` (IN `p_nombres
     SELECT LAST_INSERT_ID() AS id_voluntario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_dashboard_actividades_por_mes` ()   BEGIN
+CREATE PROCEDURE `sp_dashboard_actividades_por_mes` ()   BEGIN
     SELECT
         DATE_FORMAT(m.mes, '%b %Y') AS label,
         COALESCE(COUNT(a.id_actividad), 0) AS total
@@ -655,7 +655,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_dashboard_actividades_por_mes` (
     ORDER BY m.mes;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_dashboard_estadisticas` ()   BEGIN
+CREATE PROCEDURE `sp_dashboard_estadisticas` ()   BEGIN
     SELECT
         (SELECT COUNT(*) FROM voluntario) AS total_voluntarios,
         (SELECT COUNT(*) FROM voluntario WHERE estado = 'ACTIVO') AS voluntarios_activos,
@@ -669,7 +669,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_dashboard_estadisticas` ()   BEG
         (SELECT COUNT(*) FROM beneficiario) AS total_beneficiarios;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_dashboard_horas_por_actividad` ()   BEGIN
+CREATE PROCEDURE `sp_dashboard_horas_por_actividad` ()   BEGIN
     SELECT
         act.nombre AS label,
         COALESCE(SUM(a.horas_totales), 0) AS total_horas
@@ -681,7 +681,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_dashboard_horas_por_actividad` (
     LIMIT 5;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_dashboard_proxima_actividad` ()   BEGIN
+CREATE PROCEDURE `sp_dashboard_proxima_actividad` ()   BEGIN
     SELECT
         nombre,
         DATE_FORMAT(fecha_inicio, '%Y-%m-%d') AS fecha,
@@ -693,13 +693,13 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_dashboard_proxima_actividad` () 
     LIMIT 1;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_dashboard_total_horas` ()   BEGIN
+CREATE PROCEDURE `sp_dashboard_total_horas` ()   BEGIN
     SELECT COALESCE(SUM(horas_totales), 0) AS total_horas
     FROM asistencias
     WHERE estado IN ('ASISTIO', 'TARDANZA');
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_donacionesPorCampana` ()   BEGIN
+CREATE PROCEDURE `sp_donacionesPorCampana` ()   BEGIN
     SELECT
         COALESCE(a.nombre, 'Sin actividad') AS campana,
         SUM(CASE WHEN d.estado = 'CONFIRMADO' THEN d.cantidad ELSE 0 END) AS monto_confirmado,
@@ -713,7 +713,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_donacionesPorCampana` ()   BEGIN
     ORDER BY monto_confirmado DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_donaciones_disponibles_tesoreria` (IN `p_busqueda` VARCHAR(200))   BEGIN
+CREATE PROCEDURE `sp_donaciones_disponibles_tesoreria` (IN `p_busqueda` VARCHAR(200))   BEGIN
     SELECT 
         d.id_donacion,
         d.cantidad AS monto_original,
@@ -736,65 +736,65 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_donaciones_disponibles_tesoreria
     ORDER BY d.id_donacion DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminarDonacion` (IN `p_id_donacion` INT)   BEGIN
+CREATE PROCEDURE `sp_eliminarDonacion` (IN `p_id_donacion` INT)   BEGIN
     DELETE FROM donacion WHERE id_donacion = p_id_donacion;
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminarMovimiento` (IN `p_id` INT)   BEGIN
+CREATE PROCEDURE `sp_eliminarMovimiento` (IN `p_id` INT)   BEGIN
     DELETE FROM movimiento_financiero WHERE id_movimiento = p_id;
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminar_actividad` (IN `p_id` INT)   BEGIN
+CREATE PROCEDURE `sp_eliminar_actividad` (IN `p_id` INT)   BEGIN
     DELETE FROM actividades WHERE id_actividad = p_id;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminar_asistencia` (IN `p_id_asistencia` INT)   BEGIN
+CREATE PROCEDURE `sp_eliminar_asistencia` (IN `p_id_asistencia` INT)   BEGIN
     DELETE FROM asistencias WHERE id_asistencia = p_id_asistencia;
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminar_beneficiario` (IN `p_id_beneficiario` INT)   BEGIN
+CREATE PROCEDURE `sp_eliminar_beneficiario` (IN `p_id_beneficiario` INT)   BEGIN
     DELETE FROM beneficiario WHERE id_beneficiario = p_id_beneficiario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminar_beneficiario_nuevo` (IN `p_id_beneficiario` INT)   BEGIN
+CREATE PROCEDURE `sp_eliminar_beneficiario_nuevo` (IN `p_id_beneficiario` INT)   BEGIN
     DELETE FROM beneficiario WHERE id_beneficiario = p_id_beneficiario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminar_evento` (IN `p_id_evento` INT)   BEGIN
+CREATE PROCEDURE `sp_eliminar_evento` (IN `p_id_evento` INT)   BEGIN
     DELETE FROM eventos_calendario WHERE id_evento = p_id_evento;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminar_notificacion` (IN `p_id` INT)   BEGIN
+CREATE PROCEDURE `sp_eliminar_notificacion` (IN `p_id` INT)   BEGIN
     DELETE FROM notificaciones WHERE id_notificacion = p_id;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminar_permisos_usuario` (IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_eliminar_permisos_usuario` (IN `p_id_usuario` INT)   BEGIN
     DELETE FROM usuario_permiso WHERE id_usuario = p_id_usuario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminar_recurso_campana` (IN `p_id` INT)   BEGIN
+CREATE PROCEDURE `sp_eliminar_recurso_campana` (IN `p_id` INT)   BEGIN
     DELETE FROM recurso_campana WHERE id_recurso_campana = p_id;
     SELECT ROW_COUNT() AS filas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminar_todas_notificaciones` (IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_eliminar_todas_notificaciones` (IN `p_id_usuario` INT)   BEGIN
     DELETE FROM notificaciones WHERE id_usuario = p_id_usuario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminar_usuario` (IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_eliminar_usuario` (IN `p_id_usuario` INT)   BEGIN
     DELETE FROM usuario WHERE id_usuario = p_id_usuario;
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminar_voluntario` (IN `p_id_voluntario` INT)   BEGIN
+CREATE PROCEDURE `sp_eliminar_voluntario` (IN `p_id_voluntario` INT)   BEGIN
     DELETE FROM voluntario WHERE id_voluntario = p_id_voluntario;
     SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_estadisticas_asistencias` ()   BEGIN
+CREATE PROCEDURE `sp_estadisticas_asistencias` ()   BEGIN
     SELECT
         COUNT(*) AS total_registros,
         SUM(CASE WHEN estado = 'ASISTIO' THEN 1 ELSE 0 END) AS total_asistieron,
@@ -806,7 +806,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_estadisticas_asistencias` ()   B
     FROM asistencias;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_estadisticas_certificados` ()   BEGIN
+CREATE PROCEDURE `sp_estadisticas_certificados` ()   BEGIN
     SELECT 
         COUNT(*) AS total_certificados,
         SUM(CASE WHEN estado = 'EMITIDO' THEN 1 ELSE 0 END) AS total_emitidos,
@@ -817,7 +817,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_estadisticas_certificados` ()   
     FROM certificados;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_filtrarMovimientos` (IN `p_tipo` VARCHAR(10), IN `p_categoria` VARCHAR(60), IN `p_fecha_ini` DATE, IN `p_fecha_fin` DATE, IN `p_busqueda` VARCHAR(200))   BEGIN
+CREATE PROCEDURE `sp_filtrarMovimientos` (IN `p_tipo` VARCHAR(10), IN `p_categoria` VARCHAR(60), IN `p_fecha_ini` DATE, IN `p_fecha_fin` DATE, IN `p_busqueda` VARCHAR(200))   BEGIN
     SELECT m.id_movimiento, m.tipo, m.monto, m.descripcion,
            m.categoria, m.comprobante, m.fecha_movimiento,
            IFNULL(a.nombre, 'ù') AS actividad,
@@ -839,7 +839,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_filtrarMovimientos` (IN `p_tipo`
     ORDER BY m.fecha_movimiento DESC, m.creado_en DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_filtrar_inventario` (IN `p_q` VARCHAR(150), IN `p_categoria` VARCHAR(50), IN `p_estado` VARCHAR(20), IN `p_stock_bajo` TINYINT)   BEGIN
+CREATE PROCEDURE `sp_filtrar_inventario` (IN `p_q` VARCHAR(150), IN `p_categoria` VARCHAR(50), IN `p_estado` VARCHAR(20), IN `p_stock_bajo` TINYINT)   BEGIN
     SELECT id_item, nombre, categoria, unidad_medida, stock_actual, stock_minimo,
            estado, observacion, creado_en, actualizado_en
     FROM inventario_item
@@ -851,7 +851,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_filtrar_inventario` (IN `p_q` VA
     ORDER BY creado_en DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_generar_notificaciones_actividades_hoy` (IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_generar_notificaciones_actividades_hoy` (IN `p_id_usuario` INT)   BEGIN
     
     
     INSERT INTO notificaciones (id_usuario, tipo, titulo, mensaje, icono, color, referencia_id)
@@ -871,7 +871,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_generar_notificaciones_actividad
       );
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_generar_notificaciones_eventos_hoy` (IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_generar_notificaciones_eventos_hoy` (IN `p_id_usuario` INT)   BEGIN
     INSERT INTO notificaciones (id_usuario, titulo, mensaje, tipo, leida, fecha_creacion)
     SELECT 
         p_id_usuario,
@@ -892,7 +892,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_generar_notificaciones_eventos_h
       );
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_generar_notif_dia_lleno` (IN `p_id_usuario` INT, IN `p_fecha` DATE)   BEGIN
+CREATE PROCEDURE `sp_generar_notif_dia_lleno` (IN `p_id_usuario` INT, IN `p_fecha` DATE)   BEGIN
     DECLARE v_count INT DEFAULT 0;
     SELECT COUNT(*) INTO v_count
     FROM eventos_calendario
@@ -920,14 +920,14 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_generar_notif_dia_lleno` (IN `p_
     END IF;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_guardarDonacion` (IN `p_cantidad` DOUBLE, IN `p_descripcion` VARCHAR(150), IN `p_id_tipo_donacion` INT, IN `p_id_actividad` INT, IN `p_id_usuario_registro` INT)   BEGIN
+CREATE PROCEDURE `sp_guardarDonacion` (IN `p_cantidad` DOUBLE, IN `p_descripcion` VARCHAR(150), IN `p_id_tipo_donacion` INT, IN `p_id_actividad` INT, IN `p_id_usuario_registro` INT)   BEGIN
     INSERT INTO donacion (cantidad, descripcion, id_tipo_donacion, id_actividad, id_usuario_registro, registrado_en)
     VALUES (p_cantidad, p_descripcion, p_id_tipo_donacion, p_id_actividad, p_id_usuario_registro, NOW());
     
     SELECT LAST_INSERT_ID() AS id_donacion;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_guardar_permisos_usuario` (IN `p_id_usuario` INT, IN `p_ids_permisos` TEXT)   BEGIN
+CREATE PROCEDURE `sp_guardar_permisos_usuario` (IN `p_id_usuario` INT, IN `p_ids_permisos` TEXT)   BEGIN
     
     DELETE FROM usuario_permiso WHERE id_usuario = p_id_usuario;
 
@@ -944,7 +944,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_guardar_permisos_usuario` (IN `p
     END IF;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_horas_voluntarias_por_actividad` ()   BEGIN
+CREATE PROCEDURE `sp_horas_voluntarias_por_actividad` ()   BEGIN
     SELECT 
         act.nombre AS nombre_actividad,
         IFNULL(SUM(a.horas_totales), 0) AS total_horas
@@ -956,11 +956,11 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_horas_voluntarias_por_actividad`
     LIMIT 5;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_limpiar_notificaciones_antiguas` ()   BEGIN
+CREATE PROCEDURE `sp_limpiar_notificaciones_antiguas` ()   BEGIN
     DELETE FROM notificaciones WHERE fecha_creacion < DATE_SUB(NOW(), INTERVAL 30 DAY);
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listarDonaciones` ()   BEGIN
+CREATE PROCEDURE `sp_listarDonaciones` ()   BEGIN
     SELECT 
         d.id_donacion,
         d.cantidad,
@@ -978,7 +978,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listarDonaciones` ()   BEGIN
     ORDER BY d.registrado_en DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listarMovimientos` ()   BEGIN
+CREATE PROCEDURE `sp_listarMovimientos` ()   BEGIN
     SELECT m.id_movimiento, m.tipo, m.monto, m.descripcion,
            m.categoria, m.comprobante, m.fecha_movimiento,
            IFNULL(a.nombre, '???') AS actividad,
@@ -991,7 +991,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listarMovimientos` ()   BEGIN
     ORDER BY m.fecha_movimiento DESC, m.creado_en DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_asistencias` ()   BEGIN
+CREATE PROCEDURE `sp_listar_asistencias` ()   BEGIN
     SELECT
         a.id_asistencia,
         a.id_voluntario,
@@ -1015,7 +1015,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_asistencias` ()   BEGIN
     ORDER BY a.fecha DESC, a.creado_en DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_asistencias_por_actividad` (IN `p_id_actividad` INT)   BEGIN
+CREATE PROCEDURE `sp_listar_asistencias_por_actividad` (IN `p_id_actividad` INT)   BEGIN
     SELECT
         a.id_asistencia,
         a.id_voluntario,
@@ -1037,7 +1037,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_asistencias_por_actividad
     ORDER BY a.fecha DESC, v.apellidos, v.nombres;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_asistencias_por_voluntario` (IN `p_id_voluntario` INT)   BEGIN
+CREATE PROCEDURE `sp_listar_asistencias_por_voluntario` (IN `p_id_voluntario` INT)   BEGIN
     SELECT
         a.id_asistencia,
         a.id_voluntario,
@@ -1058,7 +1058,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_asistencias_por_voluntari
     ORDER BY a.fecha DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_certificados` ()   BEGIN
+CREATE PROCEDURE `sp_listar_certificados` ()   BEGIN
     SELECT 
         c.id_certificado,
         c.codigo_certificado,
@@ -1080,7 +1080,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_certificados` ()   BEGIN
     ORDER BY c.fecha_emision DESC, c.id_certificado DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_donaciones_con_detalle` ()   BEGIN
+CREATE PROCEDURE `sp_listar_donaciones_con_detalle` ()   BEGIN
     SELECT
         d.id_donacion,
         d.cantidad,
@@ -1115,7 +1115,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_donaciones_con_detalle` (
     ORDER BY d.registrado_en DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_donaciones_disponibles` ()   BEGIN
+CREATE PROCEDURE `sp_listar_donaciones_disponibles` ()   BEGIN
     SELECT
         d.id_donacion,
         d.cantidad,
@@ -1134,27 +1134,27 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_donaciones_disponibles` (
     ORDER BY d.registrado_en DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_eventos` ()   BEGIN
+CREATE PROCEDURE `sp_listar_eventos` ()   BEGIN
     SELECT id_evento, titulo, descripcion, fecha_inicio, fecha_fin, color, id_usuario, creado_en
     FROM eventos_calendario
     ORDER BY fecha_inicio DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_inventario` ()   BEGIN
+CREATE PROCEDURE `sp_listar_inventario` ()   BEGIN
     SELECT id_item, nombre, categoria, unidad_medida, stock_actual, stock_minimo,
            estado, observacion, creado_en, actualizado_en
     FROM inventario_item
     ORDER BY creado_en DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_items_disponibles_salida` ()   BEGIN
+CREATE PROCEDURE `sp_listar_items_disponibles_salida` ()   BEGIN
     SELECT id_item, nombre, categoria, unidad_medida, stock_actual, estado
     FROM inventario_item
     WHERE estado = 'ACTIVO' AND stock_actual > 0
     ORDER BY categoria, nombre;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_notificaciones` (IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_listar_notificaciones` (IN `p_id_usuario` INT)   BEGIN
     SELECT id_notificacion, id_usuario, tipo, titulo, mensaje, icono, color,
            leida, referencia_id, fecha_creacion
     FROM notificaciones
@@ -1163,7 +1163,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_notificaciones` (IN `p_id
     LIMIT 20;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_recursos_campana` ()   BEGIN
+CREATE PROCEDURE `sp_listar_recursos_campana` ()   BEGIN
     SELECT rc.id_recurso_campana, rc.id_actividad, rc.id_item,
            rc.cantidad_requerida, rc.cantidad_cubierta, rc.unidad, rc.estado,
            rc.observaciones, rc.fecha_registro,
@@ -1175,7 +1175,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_recursos_campana` ()   BE
     ORDER BY rc.fecha_registro DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_recursos_campana_por_actividad` (IN `p_id_actividad` INT)   BEGIN
+CREATE PROCEDURE `sp_listar_recursos_campana_por_actividad` (IN `p_id_actividad` INT)   BEGIN
     SELECT rc.id_recurso_campana, rc.id_actividad, rc.id_item,
            rc.cantidad_requerida, rc.cantidad_cubierta, rc.unidad, rc.estado,
            rc.observaciones, rc.fecha_registro,
@@ -1188,7 +1188,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_recursos_campana_por_acti
     ORDER BY rc.fecha_registro DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_salidas_donaciones` ()   BEGIN
+CREATE PROCEDURE `sp_listar_salidas_donaciones` ()   BEGIN
     SELECT
         s.id_salida,
         s.id_donacion,
@@ -1230,7 +1230,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_salidas_donaciones` ()   
     ORDER BY s.registrado_en DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_salidas_inventario` ()   BEGIN
+CREATE PROCEDURE `sp_listar_salidas_inventario` ()   BEGIN
     SELECT
         si.id_salida_inv,
         si.id_actividad,
@@ -1260,15 +1260,15 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_listar_salidas_inventario` ()   
     ORDER BY si.registrado_en DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_marcar_notificacion_leida` (IN `p_id_notificacion` INT)   BEGIN
+CREATE PROCEDURE `sp_marcar_notificacion_leida` (IN `p_id_notificacion` INT)   BEGIN
     UPDATE notificaciones SET leida = 1 WHERE id_notificacion = p_id_notificacion;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_marcar_todas_leidas` (IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_marcar_todas_leidas` (IN `p_id_usuario` INT)   BEGIN
     UPDATE notificaciones SET leida = 1 WHERE id_usuario = p_id_usuario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtenerBalance` ()   BEGIN
+CREATE PROCEDURE `sp_obtenerBalance` ()   BEGIN
     SELECT
         IFNULL(SUM(CASE WHEN tipo = 'INGRESO' THEN monto ELSE 0 END), 0) AS total_ingresos,
         IFNULL(SUM(CASE WHEN tipo = 'GASTO'   THEN monto ELSE 0 END), 0) AS total_gastos,
@@ -1276,7 +1276,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtenerBalance` ()   BEGIN
     FROM movimiento_financiero;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtenerDonacionPorId` (IN `p_id_donacion` INT)   BEGIN
+CREATE PROCEDURE `sp_obtenerDonacionPorId` (IN `p_id_donacion` INT)   BEGIN
     SELECT 
         d.id_donacion,
         d.cantidad,
@@ -1294,7 +1294,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtenerDonacionPorId` (IN `p_id_
     WHERE d.id_donacion = p_id_donacion;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtenerMovimiento` (IN `p_id` INT)   BEGIN
+CREATE PROCEDURE `sp_obtenerMovimiento` (IN `p_id` INT)   BEGIN
     SELECT m.id_movimiento, m.tipo, m.monto, m.descripcion,
            m.categoria, m.comprobante, m.fecha_movimiento,
            m.id_actividad, m.id_usuario, m.creado_en
@@ -1302,7 +1302,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtenerMovimiento` (IN `p_id` IN
     WHERE m.id_movimiento = p_id;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_actividad_por_id` (IN `p_id` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_actividad_por_id` (IN `p_id` INT)   BEGIN
     SELECT a.id_actividad, a.nombre, a.descripcion, a.fecha_inicio, a.fecha_fin,
            a.ubicacion, a.cupo_maximo,
            (SELECT COUNT(*) FROM participacion p WHERE p.id_actividad = a.id_actividad) AS inscritos,
@@ -1311,7 +1311,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_actividad_por_id` (IN `p
     WHERE a.id_actividad = p_id;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_asistencia_por_id` (IN `p_id_asistencia` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_asistencia_por_id` (IN `p_id_asistencia` INT)   BEGIN
     SELECT
         a.id_asistencia,
         a.id_voluntario,
@@ -1335,15 +1335,15 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_asistencia_por_id` (IN `
     WHERE a.id_asistencia = p_id_asistencia;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_beneficiario_por_id` (IN `p_id_beneficiario` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_beneficiario_por_id` (IN `p_id_beneficiario` INT)   BEGIN
     SELECT * FROM beneficiario WHERE id_beneficiario = p_id_beneficiario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_beneficiario_por_id_nuevo` (IN `p_id_beneficiario` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_beneficiario_por_id_nuevo` (IN `p_id_beneficiario` INT)   BEGIN
     SELECT * FROM beneficiario WHERE id_beneficiario = p_id_beneficiario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_certificado_por_codigo` (IN `p_codigo_certificado` VARCHAR(50))   BEGIN
+CREATE PROCEDURE `sp_obtener_certificado_por_codigo` (IN `p_codigo_certificado` VARCHAR(50))   BEGIN
     SELECT 
         c.id_certificado,
         c.codigo_certificado,
@@ -1365,7 +1365,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_certificado_por_codigo` 
     WHERE c.codigo_certificado = p_codigo_certificado;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_certificado_por_id` (IN `p_id_certificado` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_certificado_por_id` (IN `p_id_certificado` INT)   BEGIN
     SELECT 
         c.id_certificado,
         c.codigo_certificado,
@@ -1387,7 +1387,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_certificado_por_id` (IN 
     WHERE c.id_certificado = p_id_certificado;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_donacion_detalle` (IN `p_id` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_donacion_detalle` (IN `p_id` INT)   BEGIN
     SELECT
         d.id_donacion,
         d.cantidad,
@@ -1422,20 +1422,20 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_donacion_detalle` (IN `p
     WHERE d.id_donacion = p_id;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_intentos_restantes` (IN `p_username` VARCHAR(60), IN `p_max_intentos` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_intentos_restantes` (IN `p_username` VARCHAR(60), IN `p_max_intentos` INT)   BEGIN
     SELECT (p_max_intentos - COALESCE(intentos_fallidos, 0)) AS intentos_restantes
     FROM usuario
     WHERE username = p_username;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_item_inventario` (IN `p_id_item` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_item_inventario` (IN `p_id_item` INT)   BEGIN
     SELECT id_item, nombre, categoria, unidad_medida, stock_actual, stock_minimo,
            estado, observacion, creado_en, actualizado_en
     FROM inventario_item
     WHERE id_item = p_id_item;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_nombre_rol_usuario` (IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_nombre_rol_usuario` (IN `p_id_usuario` INT)   BEGIN
     SELECT rs.nombre_rol
     FROM usuario_rol ur
     INNER JOIN rol_sistema rs ON ur.id_rol_sistema = rs.id_rol_sistema
@@ -1443,7 +1443,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_nombre_rol_usuario` (IN 
     LIMIT 1;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_permisos_usuario` (IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_permisos_usuario` (IN `p_id_usuario` INT)   BEGIN
     SELECT p.id_permiso, p.nombre_permiso, p.descripcion
     FROM usuario_permiso up
     JOIN permiso p ON up.id_permiso = p.id_permiso
@@ -1451,7 +1451,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_permisos_usuario` (IN `p
     ORDER BY p.id_permiso;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_recurso_campana` (IN `p_id` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_recurso_campana` (IN `p_id` INT)   BEGIN
     SELECT rc.id_recurso_campana, rc.id_actividad, rc.id_item,
            rc.cantidad_requerida, rc.cantidad_cubierta, rc.unidad, rc.estado,
            rc.observaciones, rc.fecha_registro,
@@ -1463,14 +1463,14 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_recurso_campana` (IN `p_
     WHERE rc.id_recurso_campana = p_id;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_roles_por_usuario` ()   BEGIN
+CREATE PROCEDURE `sp_obtener_roles_por_usuario` ()   BEGIN
     SELECT ur.id_usuario, rs.nombre_rol
     FROM usuario_rol ur
     INNER JOIN rol_sistema rs ON ur.id_rol_sistema = rs.id_rol_sistema
     ORDER BY ur.id_usuario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_saldo_donacion` (IN `p_id_donacion` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_saldo_donacion` (IN `p_id_donacion` INT)   BEGIN
     SELECT 
         d.id_donacion,
         d.cantidad AS monto_original,
@@ -1485,7 +1485,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_saldo_donacion` (IN `p_i
     WHERE d.id_donacion = p_id_donacion;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_salida_donacion` (IN `p_id` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_salida_donacion` (IN `p_id` INT)   BEGIN
     SELECT
         s.id_salida,
         s.id_donacion,
@@ -1520,7 +1520,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_salida_donacion` (IN `p_
     LIMIT 1;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_salida_inventario` (IN `p_id` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_salida_inventario` (IN `p_id` INT)   BEGIN
     SELECT
         si.id_salida_inv,
         si.id_actividad,
@@ -1541,7 +1541,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_salida_inventario` (IN `
     WHERE si.id_salida_inv = p_id;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_salida_inventario_detalle` (IN `p_id` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_salida_inventario_detalle` (IN `p_id` INT)   BEGIN
     SELECT
         d.id_detalle,
         d.id_salida_inv,
@@ -1558,7 +1558,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_salida_inventario_detall
     ORDER BY i.nombre;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_todas_actividades` ()   BEGIN
+CREATE PROCEDURE `sp_obtener_todas_actividades` ()   BEGIN
     SELECT a.id_actividad, a.nombre, a.descripcion, a.fecha_inicio, a.fecha_fin,
            a.ubicacion, a.cupo_maximo,
            (SELECT COUNT(*) FROM participacion p WHERE p.id_actividad = a.id_actividad) AS inscritos,
@@ -1567,53 +1567,53 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_todas_actividades` ()   
     ORDER BY a.creado_en DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_todos_beneficiarios` ()   BEGIN
+CREATE PROCEDURE `sp_obtener_todos_beneficiarios` ()   BEGIN
     SELECT * FROM beneficiario ORDER BY creado_en DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_todos_beneficiarios_nuevo` ()   BEGIN
+CREATE PROCEDURE `sp_obtener_todos_beneficiarios_nuevo` ()   BEGIN
     SELECT * FROM beneficiario ORDER BY creado_en DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_todos_permisos` ()   BEGIN
+CREATE PROCEDURE `sp_obtener_todos_permisos` ()   BEGIN
     SELECT id_permiso, nombre_permiso, descripcion
     FROM permiso
     ORDER BY id_permiso;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_todos_usuarios` ()   BEGIN
+CREATE PROCEDURE `sp_obtener_todos_usuarios` ()   BEGIN
     SELECT id_usuario, nombres, apellidos, correo, username, dni, estado, creado_en, actualizado_en 
     FROM usuario 
     ORDER BY id_usuario DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_todos_voluntarios` ()   BEGIN
+CREATE PROCEDURE `sp_obtener_todos_voluntarios` ()   BEGIN
     SELECT id_voluntario, nombres, apellidos, dni, correo, telefono, carrera, estado, id_usuario
     FROM voluntario
     ORDER BY id_voluntario DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_usuario_por_id` (IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_usuario_por_id` (IN `p_id_usuario` INT)   BEGIN
     SELECT id_usuario, nombres, apellidos, correo, username, dni, estado, creado_en, actualizado_en 
     FROM usuario 
     WHERE id_usuario = p_id_usuario;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_usuario_por_username` (IN `p_username` VARCHAR(60))   BEGIN
+CREATE PROCEDURE `sp_obtener_usuario_por_username` (IN `p_username` VARCHAR(60))   BEGIN
     SELECT id_usuario, nombres, apellidos, correo, username, dni,
            password_hash, foto_perfil, estado, creado_en, actualizado_en
     FROM usuario
     WHERE username = p_username;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_voluntario_por_id` (IN `p_id_voluntario` INT)   BEGIN
+CREATE PROCEDURE `sp_obtener_voluntario_por_id` (IN `p_id_voluntario` INT)   BEGIN
     SELECT id_voluntario, nombres, apellidos, dni, correo, telefono, carrera, estado, id_usuario
     FROM voluntario
     WHERE id_voluntario = p_id_voluntario
     LIMIT 1;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_proxima_actividad` ()   BEGIN
+CREATE PROCEDURE `sp_proxima_actividad` ()   BEGIN
     SELECT 
         id_actividad,
         nombre,
@@ -1626,7 +1626,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_proxima_actividad` ()   BEGIN
     LIMIT 1;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrarMovimiento` (IN `p_tipo` VARCHAR(10), IN `p_monto` DECIMAL(12,2), IN `p_descripcion` VARCHAR(255), IN `p_categoria` VARCHAR(60), IN `p_comprobante` VARCHAR(100), IN `p_fecha` DATE, IN `p_id_actividad` INT, IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_registrarMovimiento` (IN `p_tipo` VARCHAR(10), IN `p_monto` DECIMAL(12,2), IN `p_descripcion` VARCHAR(255), IN `p_categoria` VARCHAR(60), IN `p_comprobante` VARCHAR(100), IN `p_fecha` DATE, IN `p_id_actividad` INT, IN `p_id_usuario` INT)   BEGIN
     INSERT INTO movimiento_financiero
         (tipo, monto, descripcion, categoria, comprobante,
          fecha_movimiento, id_actividad, id_usuario)
@@ -1637,7 +1637,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrarMovimiento` (IN `p_tipo
     SELECT LAST_INSERT_ID() AS id_movimiento;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_asistencia` (IN `p_id_voluntario` INT, IN `p_id_actividad` INT, IN `p_fecha` DATE, IN `p_hora_entrada` TIME, IN `p_hora_salida` TIME, IN `p_estado` VARCHAR(20), IN `p_observaciones` TEXT, IN `p_id_usuario_registro` INT)   BEGIN
+CREATE PROCEDURE `sp_registrar_asistencia` (IN `p_id_voluntario` INT, IN `p_id_actividad` INT, IN `p_fecha` DATE, IN `p_hora_entrada` TIME, IN `p_hora_salida` TIME, IN `p_estado` VARCHAR(20), IN `p_observaciones` TEXT, IN `p_id_usuario_registro` INT)   BEGIN
     DECLARE v_horas DECIMAL(5,2) DEFAULT 0.00;
 
     
@@ -1661,7 +1661,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_asistencia` (IN `p_id_
     SELECT LAST_INSERT_ID() AS id_asistencia;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_donacion_inventario` (IN `p_cantidad` DECIMAL(10,2), IN `p_descripcion` VARCHAR(150), IN `p_id_tipo_donacion` INT, IN `p_subtipo_donacion` VARCHAR(50), IN `p_id_actividad` INT, IN `p_id_usuario_registro` INT, IN `p_id_item` INT, IN `p_crear_nuevo_item` TINYINT, IN `p_item_nombre` VARCHAR(150), IN `p_item_categoria` VARCHAR(50), IN `p_item_unidad_medida` VARCHAR(30), IN `p_item_stock_minimo` DECIMAL(10,2), IN `p_donacion_anonima` TINYINT, IN `p_donante_tipo` VARCHAR(20), IN `p_donante_nombre` VARCHAR(150), IN `p_donante_correo` VARCHAR(100), IN `p_donante_telefono` VARCHAR(30), IN `p_donante_dni` VARCHAR(20), IN `p_donante_ruc` VARCHAR(20))   BEGIN
+CREATE PROCEDURE `sp_registrar_donacion_inventario` (IN `p_cantidad` DECIMAL(10,2), IN `p_descripcion` VARCHAR(150), IN `p_id_tipo_donacion` INT, IN `p_subtipo_donacion` VARCHAR(50), IN `p_id_actividad` INT, IN `p_id_usuario_registro` INT, IN `p_id_item` INT, IN `p_crear_nuevo_item` TINYINT, IN `p_item_nombre` VARCHAR(150), IN `p_item_categoria` VARCHAR(50), IN `p_item_unidad_medida` VARCHAR(30), IN `p_item_stock_minimo` DECIMAL(10,2), IN `p_donacion_anonima` TINYINT, IN `p_donante_tipo` VARCHAR(20), IN `p_donante_nombre` VARCHAR(150), IN `p_donante_correo` VARCHAR(100), IN `p_donante_telefono` VARCHAR(30), IN `p_donante_dni` VARCHAR(20), IN `p_donante_ruc` VARCHAR(20))   BEGIN
     DECLARE v_id_donacion INT;
     DECLARE v_id_donante INT DEFAULT NULL;
     DECLARE v_tipo_donante VARCHAR(20) DEFAULT NULL;
@@ -1713,7 +1713,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_donacion_inventario` (
     SELECT v_id_donacion AS id_donacion;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_intento_fallido` (IN `p_username` VARCHAR(60), IN `p_max_intentos` INT, IN `p_tiempo_bloqueo_minutos` INT)   BEGIN
+CREATE PROCEDURE `sp_registrar_intento_fallido` (IN `p_username` VARCHAR(60), IN `p_max_intentos` INT, IN `p_tiempo_bloqueo_minutos` INT)   BEGIN
     
     UPDATE usuario
     SET intentos_fallidos = intentos_fallidos + 1
@@ -1731,7 +1731,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_intento_fallido` (IN `
     WHERE username = p_username;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_movimiento_inventario` (IN `p_id_item` INT, IN `p_tipo_movimiento` VARCHAR(20), IN `p_motivo` VARCHAR(30), IN `p_cantidad` DECIMAL(10,2), IN `p_observacion` VARCHAR(255), IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_registrar_movimiento_inventario` (IN `p_id_item` INT, IN `p_tipo_movimiento` VARCHAR(20), IN `p_motivo` VARCHAR(30), IN `p_cantidad` DECIMAL(10,2), IN `p_observacion` VARCHAR(255), IN `p_id_usuario` INT)   BEGIN
     DECLARE v_stock_anterior DECIMAL(10,2) DEFAULT 0;
     DECLARE v_stock_nuevo DECIMAL(10,2) DEFAULT 0;
     DECLARE v_tipo VARCHAR(20);
@@ -1789,13 +1789,13 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_movimiento_inventario`
     SELECT v_stock_nuevo AS stock_actual;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_recurso_campana` (IN `p_id_actividad` INT, IN `p_id_item` INT, IN `p_cantidad_requerida` DOUBLE, IN `p_cantidad_cubierta` DOUBLE, IN `p_unidad` VARCHAR(50), IN `p_estado` VARCHAR(20), IN `p_observaciones` TEXT)   BEGIN
+CREATE PROCEDURE `sp_registrar_recurso_campana` (IN `p_id_actividad` INT, IN `p_id_item` INT, IN `p_cantidad_requerida` DOUBLE, IN `p_cantidad_cubierta` DOUBLE, IN `p_unidad` VARCHAR(50), IN `p_estado` VARCHAR(20), IN `p_observaciones` TEXT)   BEGIN
     INSERT INTO recurso_campana (id_actividad, id_item, cantidad_requerida, cantidad_cubierta, unidad, estado, observaciones)
     VALUES (p_id_actividad, p_id_item, p_cantidad_requerida, p_cantidad_cubierta, p_unidad, p_estado, p_observaciones);
     SELECT LAST_INSERT_ID() AS id;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_salida_donacion` (IN `p_id_donacion` INT, IN `p_id_actividad` INT, IN `p_tipo_salida` VARCHAR(20), IN `p_cantidad` DOUBLE, IN `p_descripcion` TEXT, IN `p_id_item` INT, IN `p_cantidad_item` DOUBLE, IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_registrar_salida_donacion` (IN `p_id_donacion` INT, IN `p_id_actividad` INT, IN `p_tipo_salida` VARCHAR(20), IN `p_cantidad` DOUBLE, IN `p_descripcion` TEXT, IN `p_id_item` INT, IN `p_cantidad_item` DOUBLE, IN `p_id_usuario` INT)   BEGIN
     INSERT INTO salida_donacion (
         id_donacion, id_actividad, tipo_salida, cantidad,
         descripcion, id_item, cantidad_item, id_usuario_registro, estado
@@ -1809,7 +1809,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_salida_donacion` (IN `
     SELECT LAST_INSERT_ID() AS id_salida;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_salida_inventario` (IN `p_id_actividad` INT, IN `p_motivo` VARCHAR(255), IN `p_observacion` VARCHAR(500), IN `p_id_usuario` INT)   BEGIN
+CREATE PROCEDURE `sp_registrar_salida_inventario` (IN `p_id_actividad` INT, IN `p_motivo` VARCHAR(255), IN `p_observacion` VARCHAR(500), IN `p_id_usuario` INT)   BEGIN
     DECLARE v_id_act INT;
     SET v_id_act = IF(p_id_actividad = 0, NULL, p_id_actividad);
 
@@ -1819,7 +1819,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_salida_inventario` (IN
     SELECT LAST_INSERT_ID() AS id_salida_inv;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_salida_inventario_detalle` (IN `p_id_salida_inv` INT, IN `p_id_item` INT, IN `p_cantidad` DECIMAL(10,2))   BEGIN
+CREATE PROCEDURE `sp_registrar_salida_inventario_detalle` (IN `p_id_salida_inv` INT, IN `p_id_item` INT, IN `p_cantidad` DECIMAL(10,2))   BEGIN
     DECLARE v_stock_actual DECIMAL(10,2);
 
     
@@ -1838,14 +1838,14 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_salida_inventario_deta
     SELECT 1 AS resultado;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_resetear_intentos_fallidos` (IN `p_username` VARCHAR(60))   BEGIN
+CREATE PROCEDURE `sp_resetear_intentos_fallidos` (IN `p_username` VARCHAR(60))   BEGIN
     UPDATE usuario
     SET intentos_fallidos = 0,
         bloqueado_hasta = NULL
     WHERE username = p_username;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_resumenMensual` ()   BEGIN
+CREATE PROCEDURE `sp_resumenMensual` ()   BEGIN
     SELECT
         DATE_FORMAT(fecha_movimiento, '%Y-%m') AS mes,
         SUM(CASE WHEN tipo = 'INGRESO' THEN monto ELSE 0 END) AS ingresos,
@@ -1856,7 +1856,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_resumenMensual` ()   BEGIN
     LIMIT 12;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_resumenPorCategoria` ()   BEGIN
+CREATE PROCEDURE `sp_resumenPorCategoria` ()   BEGIN
     SELECT categoria, tipo,
            SUM(monto) AS total,
            COUNT(*)   AS cantidad
@@ -1865,7 +1865,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_resumenPorCategoria` ()   BEGIN
     ORDER BY total DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_sincronizar_donaciones_tesoreria` ()   BEGIN
+CREATE PROCEDURE `sp_sincronizar_donaciones_tesoreria` ()   BEGIN
     DECLARE v_count INT DEFAULT 0;
 
     INSERT INTO movimiento_financiero (tipo, monto, descripcion, categoria, comprobante, fecha_movimiento, id_actividad, id_usuario)
@@ -1890,7 +1890,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_sincronizar_donaciones_tesoreria
     SELECT v_count AS sincronizadas;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_tiene_permiso` (IN `p_id_usuario` INT, IN `p_nombre_permiso` VARCHAR(100) COLLATE utf8mb4_spanish_ci, OUT `p_resultado` TINYINT)   BEGIN
+CREATE PROCEDURE `sp_tiene_permiso` (IN `p_id_usuario` INT, IN `p_nombre_permiso` VARCHAR(100) COLLATE utf8mb4_spanish_ci, OUT `p_resultado` TINYINT)   BEGIN
     SELECT COUNT(*) INTO p_resultado
     FROM usuario_permiso up
     JOIN permiso p ON up.id_permiso = p.id_permiso
@@ -1898,13 +1898,13 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_tiene_permiso` (IN `p_id_usuario
       AND p.nombre_permiso COLLATE utf8mb4_spanish_ci = p_nombre_permiso;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_total_horas_voluntarias` ()   BEGIN
+CREATE PROCEDURE `sp_total_horas_voluntarias` ()   BEGIN
     SELECT IFNULL(SUM(horas_totales), 0) AS total_horas
     FROM asistencias
     WHERE estado IN ('ASISTIO', 'TARDANZA');
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_verificar_bloqueo` (IN `p_username` VARCHAR(60))   BEGIN
+CREATE PROCEDURE `sp_verificar_bloqueo` (IN `p_username` VARCHAR(60))   BEGIN
     SELECT intentos_fallidos, bloqueado_hasta
     FROM usuario
     WHERE username = p_username;
@@ -3400,3 +3400,4 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
