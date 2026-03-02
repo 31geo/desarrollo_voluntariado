@@ -7,10 +7,15 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.sistemadevoluntariado.entity.MovimientoFinanciero;
 import com.sistemadevoluntariado.entity.Usuario;
+import com.sistemadevoluntariado.service.DonacionService;
 import com.sistemadevoluntariado.service.TesoreriaService;
 
 import jakarta.servlet.http.HttpSession;
@@ -21,6 +26,9 @@ public class TesoreriaController {
 
     @Autowired
     private TesoreriaService tesoreriaService;
+
+    @Autowired
+    private DonacionService donacionService;
 
     // ── Vista principal ──
     @GetMapping
@@ -34,6 +42,8 @@ public class TesoreriaController {
     @GetMapping(params = "accion=listar")
     @ResponseBody
     public List<MovimientoFinanciero> listar() {
+        // Sincronizar donaciones pendientes antes de listar
+        try { donacionService.sincronizarDonacionesConTesoreria(); } catch (Exception ignored) {}
         return tesoreriaService.listar();
     }
 
@@ -50,6 +60,8 @@ public class TesoreriaController {
     @GetMapping(params = "accion=balance")
     @ResponseBody
     public Map<String, Double> balance() {
+        // Sincronizar donaciones pendientes antes de calcular balance
+        try { donacionService.sincronizarDonacionesConTesoreria(); } catch (Exception ignored) {}
         return tesoreriaService.obtenerBalance();
     }
 
@@ -60,8 +72,9 @@ public class TesoreriaController {
             @RequestParam(required = false, defaultValue = "") String tipo,
             @RequestParam(required = false, defaultValue = "") String categoria,
             @RequestParam(required = false, defaultValue = "") String fechaInicio,
-            @RequestParam(required = false, defaultValue = "") String fechaFin) {
-        return tesoreriaService.filtrar(tipo, categoria, fechaInicio, fechaFin);
+            @RequestParam(required = false, defaultValue = "") String fechaFin,
+            @RequestParam(required = false, defaultValue = "") String busqueda) {
+        return tesoreriaService.filtrar(tipo, categoria, fechaInicio, fechaFin, busqueda);
     }
 
     // ── Resumen por categoría ──
@@ -76,6 +89,13 @@ public class TesoreriaController {
     @ResponseBody
     public List<Map<String, Object>> resumenMensual() {
         return tesoreriaService.resumenMensual();
+    }
+
+    // ── Donaciones por campaña ──
+    @GetMapping(params = "accion=donacionesPorCampana")
+    @ResponseBody
+    public List<Map<String, Object>> donacionesPorCampana() {
+        return tesoreriaService.donacionesPorCampana();
     }
 
     // ── Eliminar movimiento ──
@@ -104,6 +124,7 @@ public class TesoreriaController {
                                           @RequestParam(required = false) String comprobante,
                                           @RequestParam(required = false) String fechaMovimiento,
                                           @RequestParam(required = false, defaultValue = "0") int idActividad,
+                                          @RequestParam(required = false, defaultValue = "0") int idDonacion,
                                           HttpSession session) {
         Map<String, Object> resp = new HashMap<>();
         try {
@@ -119,9 +140,14 @@ public class TesoreriaController {
             m.setIdActividad(idActividad);
             m.setIdUsuario(usuario != null ? usuario.getIdUsuario() : 0);
 
-            boolean ok = tesoreriaService.registrar(m);
-            resp.put("success", ok);
-            resp.put("message", ok ? "Movimiento registrado correctamente" : "Error al registrar movimiento");
+            // Si se vincula a una donación, validar saldo y registrar relación
+            if (idDonacion > 0 && "GASTO".equalsIgnoreCase(tipo)) {
+                resp = tesoreriaService.registrarGastoConDonacion(m, idDonacion);
+            } else {
+                boolean ok = tesoreriaService.registrar(m);
+                resp.put("success", ok);
+                resp.put("message", ok ? "Movimiento registrado correctamente" : "Error al registrar movimiento");
+            }
         } catch (Exception e) {
             resp.put("success", false);
             resp.put("message", "Error: " + e.getMessage());
@@ -164,5 +190,19 @@ public class TesoreriaController {
             resp.put("message", "Error: " + e.getMessage());
         }
         return resp;
+    }
+
+    // ── Donaciones disponibles para gastos ──
+    @GetMapping(params = "accion=donacionesDisponibles")
+    @ResponseBody
+    public List<Map<String, Object>> donacionesDisponibles() {
+        return tesoreriaService.donacionesDisponibles();
+    }
+
+    // ── Saldo de una donación específica ──
+    @GetMapping(params = "accion=saldoDonacion")
+    @ResponseBody
+    public Map<String, Object> saldoDonacion(@RequestParam int idDonacion) {
+        return tesoreriaService.obtenerSaldoDonacion(idDonacion);
     }
 }

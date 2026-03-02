@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "recurso")
@@ -26,6 +27,16 @@ public class Recurso {
 
     private String descripcion;
 
+    @Column(name = "cantidad_total")
+    private double cantidadTotal;
+
+    // Campos transient calculados
+    @Transient
+    private double asignado;
+
+    @Transient
+    private double disponible;
+
     public Recurso() {}
 
     public Recurso(String nombre, String unidadMedida, String tipoRecurso, String descripcion) {
@@ -45,4 +56,10 @@ public class Recurso {
     public void setTipoRecurso(String tipoRecurso) { this.tipoRecurso = tipoRecurso; }
     public String getDescripcion() { return descripcion; }
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+    public double getCantidadTotal() { return cantidadTotal; }
+    public void setCantidadTotal(double cantidadTotal) { this.cantidadTotal = cantidadTotal; }
+    public double getAsignado() { return asignado; }
+    public void setAsignado(double asignado) { this.asignado = asignado; }
+    public double getDisponible() { return disponible; }
+    public void setDisponible(double disponible) { this.disponible = disponible; }
 }

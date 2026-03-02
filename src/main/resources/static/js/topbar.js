@@ -148,14 +148,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Marcar todas como leídas
+        // Marcar todas como leídas (ahora elimina todas)
         marcarTodasBtn.addEventListener('click', function(e) {
             e.stopPropagation();
-            fetch(ctxPath + '/notificaciones?action=marcarTodas')
+            fetch(ctxPath + '/notificaciones?action=eliminarTodas')
                 .then(r => r.json())
                 .then(() => {
-                    cargarNotificaciones();
-                    actualizarContador();
+                    notifList.innerHTML = `
+                        <div class="notif-empty">
+                            <i class="fas fa-bell-slash"></i>
+                            <p>Sin notificaciones</p>
+                        </div>
+                    `;
+                    notifBadge.style.display = 'none';
                 });
         });
 
@@ -184,20 +189,27 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(ctxPath + '/notificaciones?action=listar')
             .then(r => r.json())
             .then(data => {
-                if (data.success && data.notificaciones.length > 0) {
-                    notifList.innerHTML = data.notificaciones.map(n => {
+                // Soporta tanto array directo como objeto envuelto
+                const lista = Array.isArray(data) ? data
+                            : (data.notificaciones || []);
+                const noLeidas = Array.isArray(data)
+                            ? data.filter(n => !n.leida).length
+                            : (data.noLeidas || 0);
+
+                if (lista.length > 0) {
+                    notifList.innerHTML = lista.map(n => {
                         const tiempoAgo = tiempoRelativo(n.fechaCreacion);
-                        const claseLeida = n.leida ? '' : 'no-leida';
                         return `
-                            <div class="notif-item ${claseLeida}" onclick="marcarNotifLeida(${n.idNotificacion}, this)">
+                            <div class="notif-item no-leida" onclick="marcarNotifLeida(${n.idNotificacion}, this)">
                                 <div class="notif-icon" style="background: ${n.color || '#6366f1'}">
                                     <i class="fas ${n.icono || 'fa-bell'}"></i>
                                 </div>
                                 <div class="notif-text">
-                                    <p class="notif-titulo">${n.titulo}</p>
+                                    <p class="notif-titulo">${n.titulo || ''}</p>
                                     <p class="notif-mensaje">${n.mensaje || ''}</p>
                                     <span class="notif-tiempo">${tiempoAgo}</span>
                                 </div>
+                                <button class="notif-dismiss" onclick="event.stopPropagation(); marcarNotifLeida(${n.idNotificacion}, this.parentElement)" title="Cerrar">&times;</button>
                             </div>
                         `;
                     }).join('');
@@ -210,16 +222,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     `;
                 }
                 // Actualizar badge
-                if (data.noLeidas !== undefined) {
-                    if (data.noLeidas > 0) {
-                        notifBadge.textContent = data.noLeidas > 99 ? '99+' : data.noLeidas;
-                        notifBadge.style.display = 'block';
-                    } else {
-                        notifBadge.style.display = 'none';
-                    }
+                if (noLeidas > 0) {
+                    notifBadge.textContent = noLeidas > 99 ? '99+' : noLeidas;
+                    notifBadge.style.display = 'block';
+                } else {
+                    notifBadge.style.display = 'none';
                 }
             })
-            .catch(err => console.error('Error cargando notificaciones:', err));
+            .catch(err => {
+                console.error('Error cargando notificaciones:', err);
+                notifList.innerHTML = '<div class="notif-empty"><i class="fas fa-exclamation-circle"></i><p>Error al cargar</p></div>';
+            });
     }
 
     function tiempoRelativo(fechaStr) {
@@ -240,23 +253,36 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Función global para marcar como leída
+// Función global para eliminar notificación al hacer clic
 function marcarNotifLeida(id, element) {
     const ctxPath = window.location.pathname.split('/').slice(0, 2).join('/');
-    fetch(ctxPath + '/notificaciones?action=marcarLeida&id=' + id)
+    fetch(ctxPath + '/notificaciones?action=eliminar&id=' + id)
         .then(r => r.json())
         .then(() => {
-            element.classList.remove('no-leida');
-            // Actualizar contador
-            const badge = document.getElementById('notifBadge');
-            let count = parseInt(badge.textContent) || 0;
-            if (count > 0) {
-                count--;
+            // Animación de salida y remoción del DOM
+            element.style.transition = 'opacity 0.25s, transform 0.25s';
+            element.style.opacity = '0';
+            element.style.transform = 'translateX(20px)';
+            setTimeout(() => {
+                element.remove();
+                // Actualizar contador
+                const badge = document.getElementById('notifBadge');
+                let count = parseInt(badge.textContent) || 0;
+                if (count > 0) count--;
                 if (count > 0) {
                     badge.textContent = count;
                 } else {
                     badge.style.display = 'none';
                 }
-            }
+                // Si la lista quedó vacía
+                const lista = document.getElementById('notifList');
+                if (lista && !lista.querySelector('.notif-item')) {
+                    lista.innerHTML = `
+                        <div class="notif-empty">
+                            <i class="fas fa-bell-slash"></i>
+                            <p>Sin notificaciones</p>
+                        </div>`;
+                }
+            }, 260);
         });
 }

@@ -44,4 +44,19 @@ public class NotificacionService {
     public void generarNotificacionesEventosHoy(int idUsuario) {
         notificacionRepository.generarNotificacionesEventosHoy(idUsuario);
     }
+
+    @Transactional
+    public void eliminarNotificacion(int idNotificacion) {
+        notificacionRepository.eliminarNotificacion(idNotificacion);
+    }
+
+    @Transactional
+    public void eliminarTodasNotificaciones(int idUsuario) {
+        notificacionRepository.eliminarTodasNotificaciones(idUsuario);
+    }
+
+    @Transactional
+    public void generarNotifDiaLleno(int idUsuario, String fecha) {
+        notificacionRepository.generarNotifDiaLleno(idUsuario, fecha);
+    }
 }

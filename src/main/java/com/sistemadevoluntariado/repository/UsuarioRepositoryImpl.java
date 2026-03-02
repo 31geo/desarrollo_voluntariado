@@ -44,6 +44,17 @@ public class UsuarioRepositoryImpl implements UsuarioRepositoryCustom {
                         .setParameter(1, nuevoId)
                         .setParameter(2, voluntarioId)
                         .executeUpdate();
+
+                // Asignar rol al usuario en la tabla usuario_rol
+                if (rolSistemaId > 0) {
+                    em.createNativeQuery(
+                            "INSERT INTO usuario_rol (id_usuario, id_rol_sistema, asignado_en) VALUES (?1, ?2, NOW())")
+                            .setParameter(1, nuevoId)
+                            .setParameter(2, rolSistemaId)
+                            .executeUpdate();
+                    logger.info("Rol " + rolSistemaId + " asignado al usuario " + nuevoId);
+                }
+
                 logger.info("Usuario creado con ID: " + nuevoId + " - username: " + username);
                 return true;
             }

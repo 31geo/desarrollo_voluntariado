@@ -85,12 +85,13 @@ async function buscarYLlenarDatos() {
         console.log("Datos completos de la API:", datos);
         console.log("Claves disponibles:", Object.keys(datos));
 
-        // Llenar NOMBRES
+        // Llenar NOMBRE RESPONSABLE (o nombres si existe ese campo)
         let nombreCompleto = "";
         if (datos.nombres) {
             nombreCompleto = datos.nombres;
-            document.getElementById("nombres").value = nombreCompleto;
-            console.log("✓ Nombres llenado:", nombreCompleto);
+            const campoNombre = document.getElementById("nombreResponsable") || document.getElementById("nombres");
+            if (campoNombre) campoNombre.value = nombreCompleto;
+            console.log("✓ Nombre llenado:", nombreCompleto);
         }
 
         // Llenar APELLIDOS - Intentar múltiples estrategias
@@ -140,7 +141,8 @@ async function buscarYLlenarDatos() {
         }
 
         if (apellidoCompleto) {
-            document.getElementById("apellidos").value = apellidoCompleto;
+            const campoApellido = document.getElementById("apellidosResponsable") || document.getElementById("apellidos");
+            if (campoApellido) campoApellido.value = apellidoCompleto;
             console.log("✓ FINAL: Apellidos llenado:", apellidoCompleto);
         } else {
             console.warn("⚠ No se encontró apellido en los datos");

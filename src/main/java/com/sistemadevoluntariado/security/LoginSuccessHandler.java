@@ -9,10 +9,12 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import com.sistemadevoluntariado.entity.Usuario;
+import com.sistemadevoluntariado.entity.Voluntario;
 import com.sistemadevoluntariado.service.CustomUserDetailsService;
 import com.sistemadevoluntariado.service.NotificacionService;
 import com.sistemadevoluntariado.service.PermisoService;
 import com.sistemadevoluntariado.service.RolSistemaService;
+import com.sistemadevoluntariado.service.VoluntarioService;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,6 +42,9 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     @Autowired
     private RolSistemaService rolSistemaService;
 
+    @Autowired
+    private VoluntarioService voluntarioService;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
@@ -64,7 +69,14 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
             // Cargar nombre del rol en la sesión para el topbar
             try {
                 String nombreRol = rolSistemaService.obtenerNombreRolDeUsuario(usuario.getIdUsuario());
-                session.setAttribute("nombreRolUsuario", nombreRol != null ? nombreRol : "Usuario");
+                // Si no hay rol en usuario_rol, usar el cargo del voluntario
+                if (nombreRol == null || nombreRol.isBlank()) {
+                    Voluntario vol = voluntarioService.obtenerVoluntarioPorUsuarioId(usuario.getIdUsuario());
+                    if (vol != null && vol.getCargo() != null && !vol.getCargo().isBlank()) {
+                        nombreRol = vol.getCargo();
+                    }
+                }
+                session.setAttribute("nombreRolUsuario", nombreRol != null && !nombreRol.isBlank() ? nombreRol : "Usuario");
             } catch (Exception e) {
                 session.setAttribute("nombreRolUsuario", "Usuario");
             }

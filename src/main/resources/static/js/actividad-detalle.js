@@ -27,47 +27,216 @@ function cargarRecursos() {
     fetch(`${BASE}?action=recursos&id=${ID_ACT}`)
         .then(r => r.json())
         .then(lista => {
+            _recursosAsignadosIds = lista.map(ar => ar.idRecurso);
             const tbody = document.getElementById('tbody-recursos');
             if (!lista.length) {
-                tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">No hay recursos asignados aún</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">No hay recursos asignados aún</td></tr>';
                 return;
             }
             tbody.innerHTML = lista.map(ar => {
-                const pct = ar.porcentaje || 0;
                 const prioClass = ar.prioridad === 'ALTA' ? 'prio-alta' : ar.prioridad === 'BAJA' ? 'prio-baja' : 'prio-media';
                 return `<tr>
                     <td><strong>${ar.nombreRecurso || 'Recurso #' + ar.idRecurso}</strong><br><small>${ar.unidadMedida || ''}</small></td>
                     <td>${ar.tipoRecurso || '—'}</td>
-                    <td>${ar.cantidadRequerida}</td>
-                    <td>
-                        <input type="number" value="${ar.cantidadConseguida}" min="0" step="0.01" class="input-inline"
-                               onchange="actualizarConseguida(${ar.idActividadRecurso}, this.value)">
-                    </td>
-                    <td>
-                        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-                        <small>${pct}%</small>
-                    </td>
+                    <td>${formatNumDetalle(ar.cantidadRequerida)}</td>
                     <td><span class="badge-prio ${prioClass}">${ar.prioridad || 'MEDIA'}</span></td>
-                    <td><button class="btn-icon delete" onclick="eliminarRecurso(${ar.idActividadRecurso})" title="Quitar"><i class="fas fa-trash"></i></button></td>
+                    <td>
+                        <button class="btn-icon edit" onclick="abrirEditarRecurso(${ar.idActividadRecurso}, '${(ar.nombreRecurso || '').replace(/'/g,"\\'")}', ${ar.cantidadRequerida}, '${ar.prioridad || 'MEDIA'}', '${(ar.observacion || '').replace(/'/g,"\\'")}')" title="Editar"><i class="fas fa-pen"></i></button>
+                        <button class="btn-icon delete" onclick="eliminarRecurso(${ar.idActividadRecurso})" title="Quitar"><i class="fas fa-trash"></i></button>
+                    </td>
                 </tr>`;
             }).join('');
         }).catch(() => {
-            document.getElementById('tbody-recursos').innerHTML = '<tr><td colspan="7" class="empty-msg">Error al cargar recursos</td></tr>';
+            document.getElementById('tbody-recursos').innerHTML = '<tr><td colspan="5" class="empty-msg">Error al cargar recursos</td></tr>';
         });
 }
 
+let _listaRecursos = [];
+let _recursoSeleccionado = null;
+let _editandoRecursoId = null; // null = agregar, number = editar
+let _recursosAsignadosIds = []; // IDs de recursos ya vinculados a esta actividad
+
 function abrirModalRecurso() {
-    document.getElementById('formRecurso').reset();
+    _editandoRecursoId = null;
+    _recursoSeleccionado = null;
+    document.getElementById('modalRecursoTitulo').textContent = 'Agregar Recurso';
+    document.getElementById('btnGuardarRecurso').textContent = 'Agregar';
+    document.getElementById('recursoSearchWrap').style.display = '';
+    document.getElementById('recursoNombreReadonly').style.display = 'none';
+    document.getElementById('selRecurso').value = '';
+    document.getElementById('buscarRecursoInput').value = '';
+    document.getElementById('clearRecursoBtn').style.display = 'none';
+    document.getElementById('recursoDropdown').innerHTML = '';
+    document.getElementById('recursoDropdown').classList.remove('open');
+    document.getElementById('cantidadRequerida').value = '';
+    document.getElementById('prioridadRecurso').value = 'MEDIA';
+    document.getElementById('obsRecurso').value = '';
+
+    // Cargar lista de recursos disponibles
+    fetch(`${BASE}?action=catalogoRecursos`)
+        .then(r => r.json()).then(lista => {
+            _listaRecursos = Array.isArray(lista) ? lista : [];
+        }).catch(() => { _listaRecursos = []; });
+
+    document.getElementById('modalRecurso').style.display = 'flex';
+    setTimeout(() => document.getElementById('buscarRecursoInput').focus(), 200);
+}
+function cerrarModalRecurso() {
+    document.getElementById('modalRecurso').style.display = 'none';
+    document.getElementById('recursoDropdown').classList.remove('open');
+    _editandoRecursoId = null;
+}
+
+function abrirEditarRecurso(idAR, nombre, cantidad, prioridad, obs) {
+    _editandoRecursoId = idAR;
+    _recursoSeleccionado = null;
+    document.getElementById('modalRecursoTitulo').textContent = 'Editar Recurso';
+    document.getElementById('btnGuardarRecurso').textContent = 'Guardar';
+    // Ocultar buscador y mostrar nombre fijo
+    document.getElementById('recursoSearchWrap').style.display = 'none';
+    document.getElementById('recursoNombreReadonly').style.display = '';
+    document.getElementById('recursoNombreReadonly').textContent = nombre;
+    document.getElementById('selRecurso').value = '';
+    document.getElementById('cantidadRequerida').value = cantidad;
+    document.getElementById('prioridadRecurso').value = prioridad;
+    document.getElementById('obsRecurso').value = obs || '';
     document.getElementById('modalRecurso').style.display = 'flex';
 }
-function cerrarModalRecurso() { document.getElementById('modalRecurso').style.display = 'none'; }
 
+function renderRecursoDropdown(lista) {
+    const dropdown = document.getElementById('recursoDropdown');
+    if (!lista || lista.length === 0) {
+        dropdown.innerHTML = '<div class="search-select-empty">No se encontraron recursos</div>';
+        dropdown.classList.add('open');
+        return;
+    }
+    dropdown.innerHTML = lista.map(r => {
+        const disponible = r.disponible != null ? r.disponible : r.cantidadTotal || 0;
+        const total = r.cantidadTotal || 0;
+        const agotado = disponible <= 0;
+        const bajo = !agotado && total > 0 && (disponible / total) <= 0.2;
+        const yaAsignado = _recursosAsignadosIds.includes(r.idRecurso);
+        const estadoClass = yaAsignado ? 'recurso-asignado' : agotado ? 'recurso-agotado' : bajo ? 'recurso-bajo' : '';
+        const estadoLabel = yaAsignado
+            ? '<span style="color:#6366f1;font-weight:600;font-size:.78rem"><i class="fas fa-check-circle"></i> Ya asignado a esta actividad</span>'
+            : agotado
+            ? '<span style="color:#c53030;font-weight:600;font-size:.78rem">Sin disponibilidad</span>'
+            : bajo
+                ? `<span style="color:#b45309;font-weight:600;font-size:.78rem">Bajo stock: ${formatNumDetalle(disponible)} de ${formatNumDetalle(total)}</span>`
+                : `<span style="color:#047857;font-weight:600;font-size:.78rem">Disponible: ${formatNumDetalle(disponible)} de ${formatNumDetalle(total)}</span>`;
+
+        return `
+            <div class="search-select-option ${estadoClass}" data-id="${r.idRecurso}" data-nombre="${r.nombre}" data-unidad="${r.unidadMedida || 'Unidad'}" data-disponible="${disponible}" ${agotado ? 'data-agotado="true"' : ''} ${yaAsignado ? 'data-asignado="true"' : ''}>
+                <div class="search-opt-name">${r.nombre}</div>
+                <div class="search-opt-dni">${r.tipoRecurso || '—'} — ${r.unidadMedida || 'Unidad'}</div>
+                <div>${estadoLabel}</div>
+            </div>
+        `;
+    }).join('');
+    dropdown.querySelectorAll('.search-select-option').forEach(opt => {
+        opt.addEventListener('click', function() {
+            if (this.dataset.asignado === 'true') {
+                mostrarToast('Este recurso ya está asignado a esta actividad', 'warning');
+                return;
+            }
+            if (this.dataset.agotado === 'true') {
+                alert('Este recurso no tiene disponibilidad. Registre más stock en Gestión de Stock.');
+                return;
+            }
+            seleccionarRecurso(this.dataset.id, this.dataset.nombre, this.dataset.unidad);
+        });
+    });
+    dropdown.classList.add('open');
+}
+
+function formatNumDetalle(n) {
+    if (n == null) return "0";
+    return Number(n) % 1 === 0 ? String(Math.round(Number(n))) : Number(n).toFixed(2);
+}
+
+function seleccionarRecurso(id, nombre, unidad) {
+    _recursoSeleccionado = id;
+    document.getElementById('selRecurso').value = id;
+    document.getElementById('buscarRecursoInput').value = nombre + ' (' + unidad + ')';
+    document.getElementById('clearRecursoBtn').style.display = 'flex';
+    document.getElementById('recursoDropdown').classList.remove('open');
+}
+
+function limpiarSeleccionRecurso() {
+    _recursoSeleccionado = null;
+    document.getElementById('selRecurso').value = '';
+    document.getElementById('buscarRecursoInput').value = '';
+    document.getElementById('clearRecursoBtn').style.display = 'none';
+    document.getElementById('recursoDropdown').innerHTML = '';
+    document.getElementById('recursoDropdown').classList.remove('open');
+    document.getElementById('buscarRecursoInput').focus();
+}
+
+// Eventos de búsqueda de recursos
+document.addEventListener('DOMContentLoaded', function() {
+    const inputR = document.getElementById('buscarRecursoInput');
+    if (inputR) {
+        inputR.addEventListener('input', function() {
+            _recursoSeleccionado = null;
+            document.getElementById('selRecurso').value = '';
+            const q = this.value.trim().toLowerCase();
+            document.getElementById('clearRecursoBtn').style.display = q ? 'flex' : 'none';
+            if (!q) {
+                document.getElementById('recursoDropdown').innerHTML = '';
+                document.getElementById('recursoDropdown').classList.remove('open');
+                return;
+            }
+            const filtrados = _listaRecursos.filter(r => {
+                const texto = ((r.nombre || '') + ' ' + (r.tipoRecurso || '') + ' ' + (r.unidadMedida || '')).toLowerCase();
+                return texto.includes(q);
+            });
+            renderRecursoDropdown(filtrados);
+        });
+        inputR.addEventListener('focus', function() {
+            const q = this.value.trim().toLowerCase();
+            if (!_recursoSeleccionado && q && _listaRecursos.length > 0) {
+                const filtrados = _listaRecursos.filter(r => {
+                    const texto = ((r.nombre || '') + ' ' + (r.tipoRecurso || '') + ' ' + (r.unidadMedida || '')).toLowerCase();
+                    return texto.includes(q);
+                });
+                renderRecursoDropdown(filtrados);
+            }
+        });
+    }
+    const clearBtnR = document.getElementById('clearRecursoBtn');
+    if (clearBtnR) clearBtnR.addEventListener('click', limpiarSeleccionRecurso);
+    document.addEventListener('click', function(e) {
+        const cR = document.getElementById('recursoSearchContainer');
+        if (cR && !cR.contains(e.target)) {
+            document.getElementById('recursoDropdown').classList.remove('open');
+        }
+    });
+});
+
+let _guardandoRecurso = false;
 function guardarRecurso(e) {
     e.preventDefault();
+    if (_guardandoRecurso) return;
+    _guardandoRecurso = true;
+    const btn = document.getElementById('btnGuardarRecurso');
+    btn.disabled = true;
+
     const params = new URLSearchParams();
-    params.append('action', 'agregarRecurso');
-    params.append('idActividad', ID_ACT);
-    params.append('idRecurso', document.getElementById('selRecurso').value);
+
+    if (_editandoRecursoId) {
+        params.append('action', 'actualizarRecurso');
+        params.append('idActividadRecurso', _editandoRecursoId);
+    } else {
+        const idRecurso = document.getElementById('selRecurso').value;
+        if (!idRecurso) {
+            mostrarToast('Seleccione un recurso de la lista', 'warning');
+            _guardandoRecurso = false; btn.disabled = false;
+            return;
+        }
+        params.append('action', 'agregarRecurso');
+        params.append('idActividad', ID_ACT);
+        params.append('idRecurso', idRecurso);
+    }
     params.append('cantidadRequerida', document.getElementById('cantidadRequerida').value);
     params.append('prioridad', document.getElementById('prioridadRecurso').value);
     params.append('observacion', document.getElementById('obsRecurso').value);
@@ -76,19 +245,8 @@ function guardarRecurso(e) {
         .then(r => r.json()).then(res => {
             if (res.success) { cerrarModalRecurso(); cargarRecursos(); mostrarToast(res.message, 'success'); }
             else mostrarToast(res.message, 'error');
-        }).catch(() => mostrarToast('Error al agregar recurso', 'error'));
-}
-
-function actualizarConseguida(idAR, valor) {
-    const params = new URLSearchParams();
-    params.append('action', 'actualizarConseguida');
-    params.append('idActividadRecurso', idAR);
-    params.append('cantidadConseguida', valor);
-    fetch(BASE, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString() })
-        .then(r => r.json()).then(res => {
-            if (res.success) cargarRecursos();
-            else mostrarToast(res.message, 'error');
-        });
+        }).catch(() => mostrarToast('Error al guardar recurso', 'error'))
+        .finally(() => { _guardandoRecurso = false; btn.disabled = false; });
 }
 
 function eliminarRecurso(idAR) {
@@ -103,30 +261,43 @@ function eliminarRecurso(idAR) {
         });
 }
 
-// ── Crear recurso en catálogo ──
-function abrirModalNuevoRecurso() { document.getElementById('modalNuevoRecurso').style.display = 'flex'; }
-
-function crearRecurso(e) {
+// ── Modal inline: Nuevo Recurso en Stock ──
+function abrirModalNuevoRecursoStock() {
+    document.getElementById('formNuevoRecursoStock').reset();
+    document.getElementById('modalNuevoRecursoStock').style.display = 'flex';
+}
+function cerrarModalNuevoRecursoStock() {
+    document.getElementById('modalNuevoRecursoStock').style.display = 'none';
+}
+let _guardandoStock = false;
+function guardarNuevoRecursoStock(e) {
     e.preventDefault();
+    if (_guardandoStock) return;
+    _guardandoStock = true;
+    const btn = e.target.querySelector('button[type="submit"]');
+    if (btn) btn.disabled = true;
+
     const params = new URLSearchParams();
-    params.append('action', 'crearRecurso');
-    params.append('nombre', document.getElementById('nrNombre').value);
-    params.append('unidadMedida', document.getElementById('nrUnidad').value);
-    params.append('tipoRecurso', document.getElementById('nrTipo').value);
-    params.append('descripcion', document.getElementById('nrDesc').value);
-    fetch(BASE, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString() })
+    params.append('accion', 'registrar');
+    params.append('nombre', document.getElementById('stockNombre').value);
+    params.append('tipoRecurso', document.getElementById('stockTipoRecurso').value);
+    params.append('unidadMedida', document.getElementById('stockUnidadMedida').value);
+    params.append('cantidadTotal', document.getElementById('stockCantidadTotal').value);
+    params.append('descripcion', document.getElementById('stockDescripcion').value);
+
+    fetch('recursos-campana', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString() })
         .then(r => r.json()).then(res => {
             if (res.success) {
-                document.getElementById('modalNuevoRecurso').style.display = 'none';
-                // Agregar al select
-                const opt = document.createElement('option');
-                opt.value = res.idRecurso;
-                opt.textContent = document.getElementById('nrNombre').value + ' (' + (document.getElementById('nrUnidad').value || 'Unidad') + ')';
-                document.getElementById('selRecurso').appendChild(opt);
-                document.getElementById('selRecurso').value = res.idRecurso;
-                mostrarToast(res.message, 'success');
-            } else mostrarToast(res.message, 'error');
-        }).catch(() => mostrarToast('Error al crear recurso', 'error'));
+                cerrarModalNuevoRecursoStock();
+                mostrarToast('Recurso creado en stock', 'success');
+                fetch(`${BASE}?action=catalogoRecursos`)
+                    .then(r => r.json()).then(lista => { _listaRecursos = Array.isArray(lista) ? lista : []; })
+                    .catch(() => {});
+            } else {
+                mostrarToast(res.message, 'error');
+            }
+        }).catch(() => mostrarToast('Error al registrar recurso', 'error'))
+        .finally(() => { _guardandoStock = false; if (btn) btn.disabled = false; });
 }
 
 // ══════════════════════════════════════
@@ -182,7 +353,7 @@ function abrirModalParticipante() {
                 vistos.add(clave);
                 return true;
             });
-            renderVoluntarioDropdown(_listaVoluntarios);
+            // No mostrar dropdown hasta que el usuario escriba algo
         });
     document.getElementById('modalParticipante').style.display = 'flex';
     setTimeout(() => input.focus(), 200);
@@ -233,7 +404,8 @@ function limpiarSeleccionVoluntario() {
     document.getElementById('clearVoluntarioBtn').style.display = 'none';
     const btnAsignar = document.getElementById('btnAsignarVol');
     btnAsignar.disabled = true; btnAsignar.style.opacity = '0.5';
-    renderVoluntarioDropdown(_listaVoluntarios);
+    document.getElementById('voluntarioDropdown').innerHTML = '';
+    document.getElementById('voluntarioDropdown').classList.remove('open');
     input.focus();
 }
 
@@ -247,6 +419,11 @@ document.addEventListener('DOMContentLoaded', function () {
             btnAsignar.disabled = true; btnAsignar.style.opacity = '0.5';
             const q = this.value.trim().toLowerCase();
             document.getElementById('clearVoluntarioBtn').style.display = q ? 'flex' : 'none';
+            if (!q) {
+                document.getElementById('voluntarioDropdown').innerHTML = '';
+                document.getElementById('voluntarioDropdown').classList.remove('open');
+                return;
+            }
             const filtrados = _listaVoluntarios.filter(v => {
                 const texto = (v.nombres + ' ' + v.apellidos + ' ' + (v.dni || '')).toLowerCase();
                 return texto.includes(q);
@@ -254,12 +431,12 @@ document.addEventListener('DOMContentLoaded', function () {
             renderVoluntarioDropdown(filtrados);
         });
         input.addEventListener('focus', function () {
-            if (!_voluntarioSeleccionado && _listaVoluntarios.length > 0) {
-                const q = this.value.trim().toLowerCase();
-                const filtrados = q ? _listaVoluntarios.filter(v => {
+            const q = this.value.trim().toLowerCase();
+            if (!_voluntarioSeleccionado && q && _listaVoluntarios.length > 0) {
+                const filtrados = _listaVoluntarios.filter(v => {
                     const texto = (v.nombres + ' ' + v.apellidos + ' ' + (v.dni || '')).toLowerCase();
                     return texto.includes(q);
-                }) : _listaVoluntarios;
+                });
                 renderVoluntarioDropdown(filtrados);
             }
         });
@@ -358,7 +535,7 @@ function cargarListaBeneficiarios() {
     fetch('beneficiarios?action=listar')
         .then(r => r.json()).then(lista => {
             _listaBeneficiarios = (Array.isArray(lista) ? lista : []).filter(b => b.estado === 'ACTIVO');
-            renderBeneficiarioDropdown(_listaBeneficiarios);
+            // No mostrar dropdown hasta que el usuario escriba algo
         });
 }
 
@@ -400,7 +577,8 @@ function limpiarSeleccionBeneficiario() {
     document.getElementById('clearBeneficiarioBtn').style.display = 'none';
     const btnVincular = document.getElementById('btnVincularBen');
     btnVincular.disabled = true; btnVincular.style.opacity = '0.5';
-    renderBeneficiarioDropdown(_listaBeneficiarios);
+    document.getElementById('beneficiarioDropdown').innerHTML = '';
+    document.getElementById('beneficiarioDropdown').classList.remove('open');
     document.getElementById('buscarBeneficiarioInput').focus();
 }
 
@@ -420,6 +598,11 @@ document.addEventListener('DOMContentLoaded', function() {
             btnV.disabled = true; btnV.style.opacity = '0.5';
             const q = this.value.trim().toLowerCase();
             document.getElementById('clearBeneficiarioBtn').style.display = q ? 'flex' : 'none';
+            if (!q) {
+                document.getElementById('beneficiarioDropdown').innerHTML = '';
+                document.getElementById('beneficiarioDropdown').classList.remove('open');
+                return;
+            }
             const filtrados = _listaBeneficiarios.filter(b => {
                 const texto = (
                     (b.organizacion || '') + ' ' +
@@ -437,9 +620,9 @@ document.addEventListener('DOMContentLoaded', function() {
             renderBeneficiarioDropdown(filtrados);
         });
         inputB.addEventListener('focus', function() {
-            if (!_beneficiarioSeleccionado && _listaBeneficiarios.length > 0) {
-                const q = this.value.trim().toLowerCase();
-                const filtrados = q ? _listaBeneficiarios.filter(b => {
+            const q = this.value.trim().toLowerCase();
+            if (!_beneficiarioSeleccionado && q && _listaBeneficiarios.length > 0) {
+                const filtrados = _listaBeneficiarios.filter(b => {
                     const texto = (
                         (b.organizacion || '') + ' ' +
                         (b.direccion || '') + ' ' +
@@ -452,8 +635,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         (b.telefono || '')
                     ).toLowerCase();
                     return texto.includes(q);
-                }) : _listaBeneficiarios;
-                renderBeneficiarioDropdown(filtrados);
+                });
+                if (filtrados.length > 0) renderBeneficiarioDropdown(filtrados);
             }
         });
     }

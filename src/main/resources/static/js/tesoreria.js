@@ -7,7 +7,11 @@ const modal = document.getElementById("modalMovimiento");
 const form  = document.getElementById("formMovimiento");
 let editingId = null;
 let chartMensual = null;
-let chartCategoria = null;
+let chartCampana = null;
+
+// ── Donación search state ──
+let donacionesCache = [];
+let donacionSeleccionada = null;
 
 // ====================== INICIALIZACIÓN ======================
 document.addEventListener("DOMContentLoaded", () => {
@@ -63,9 +67,23 @@ function abrirModal() {
     modal.style.display = "flex";
     form.reset();
     editingId = null;
-    document.getElementById("tituloModal").textContent = "Registrar Movimiento";
+    donacionSeleccionada = null;
+    document.getElementById("idDonacionSeleccionada").value = "0";
+    document.getElementById("tipo").value = "GASTO";
+    document.getElementById("tituloModal").textContent = "Registrar Gasto";
     document.getElementById("fechaMovimiento").valueAsDate = new Date();
+
+    // Reset donación UI
+    document.getElementById("buscarDonacion").value = "";
+    document.getElementById("donacionDropdown").innerHTML = "";
+    document.getElementById("donacionDropdown").classList.remove("show");
+    document.getElementById("donacionInfoCard").style.display = "none";
+    document.getElementById("donacionValidacionMsg").style.display = "none";
+    document.getElementById("btnClearDonacion").style.display = "none";
+    document.getElementById("seccionDonacion").style.display = "";
+
     cargarActividades();
+    cargarDonacionesDisponibles();
 }
 
 function cerrarModal() {
@@ -76,6 +94,17 @@ function cerrarModal() {
 async function guardarMovimiento(event) {
     event.preventDefault();
 
+    const montoVal = parseFloat(document.getElementById("monto").value) || 0;
+    const idDonacion = parseInt(document.getElementById("idDonacionSeleccionada").value) || 0;
+
+    // Validar contra saldo de donación si hay una seleccionada
+    if (idDonacion > 0 && donacionSeleccionada) {
+        if (montoVal > donacionSeleccionada.saldoDisponible) {
+            Notify.error("El monto (S/ " + montoVal.toFixed(2) + ") excede el saldo disponible de la donación (S/ " + donacionSeleccionada.saldoDisponible.toFixed(2) + ")");
+            return;
+        }
+    }
+
     const params = new URLSearchParams();
     params.append("tipo", document.getElementById("tipo").value);
     params.append("monto", document.getElementById("monto").value);
@@ -84,6 +113,7 @@ async function guardarMovimiento(event) {
     params.append("comprobante", document.getElementById("comprobante").value);
     params.append("fechaMovimiento", document.getElementById("fechaMovimiento").value);
     params.append("idActividad", document.getElementById("idActividad").value);
+    if (idDonacion > 0) params.append("idDonacion", idDonacion);
 
     if (editingId) {
         params.append("accion", "actualizar");
@@ -117,6 +147,8 @@ async function guardarMovimiento(event) {
 async function editarMovimiento(id) {
     abrirModal();
     editingId = id;
+    // Ocultar sección donación al editar
+    document.getElementById("seccionDonacion").style.display = "none";
 
     await cargarActividades();
 
@@ -132,7 +164,7 @@ async function editarMovimiento(id) {
         document.getElementById("fechaMovimiento").value = m.fechaMovimiento;
         document.getElementById("idActividad").value = m.idActividad || 0;
 
-        document.getElementById("tituloModal").textContent = "Editar Movimiento";
+        document.getElementById("tituloModal").textContent = "Editar Gasto";
     } catch (e) {
         console.error("Error al obtener movimiento:", e);
     }
@@ -140,7 +172,7 @@ async function editarMovimiento(id) {
 
 // ====================== ELIMINAR ======================
 async function eliminarMovimiento(id) {
-    const ok = await Notify.confirm("¿Eliminar este movimiento?", "Esta acción no se puede deshacer.", { variant: 'danger', okText: 'Sí, eliminar' });
+    const ok = await Notify.confirm("¿Eliminar este gasto?", "Esta acción no se puede deshacer.", { variant: 'danger', okText: 'Sí, eliminar' });
     if (!ok) return;
 
     try {
@@ -174,6 +206,7 @@ async function filtrarMovimientos() {
     const categoria = document.getElementById("filtroCategoria").value;
     const fechaIni  = document.getElementById("filtroFechaIni").value;
     const fechaFin  = document.getElementById("filtroFechaFin").value;
+    const busqueda  = (document.getElementById("filtroBusqueda").value || "").trim();
 
     const params = new URLSearchParams();
     params.append("accion", "filtrar");
@@ -181,6 +214,7 @@ async function filtrarMovimientos() {
     if (categoria) params.append("categoria", categoria);
     if (fechaIni)  params.append("fechaInicio", fechaIni);
     if (fechaFin)  params.append("fechaFin", fechaFin);
+    if (busqueda)  params.append("busqueda", busqueda);
 
     try {
         const resp = await fetch("tesoreria?" + params.toString());
@@ -196,6 +230,7 @@ function limpiarFiltros() {
     document.getElementById("filtroCategoria").value = "";
     document.getElementById("filtroFechaIni").value = "";
     document.getElementById("filtroFechaFin").value = "";
+    document.getElementById("filtroBusqueda").value = "";
     cargarMovimientos();
 }
 
@@ -233,7 +268,7 @@ function renderTabla(data) {
 // ====================== GRÁFICOS ======================
 async function cargarGraficos() {
     await cargarGraficoMensual();
-    await cargarGraficoCategoria();
+    await cargarGraficoCampana();
 }
 
 async function cargarGraficoMensual() {
@@ -241,43 +276,112 @@ async function cargarGraficoMensual() {
         const resp = await fetch("tesoreria?accion=resumenMensual");
         const data = await resp.json();
 
-        const meses    = data.map(d => d.mes).reverse();
+        const mesesRaw = data.map(d => d.mes).reverse();
         const ingresos = data.map(d => d.ingresos).reverse();
         const gastos   = data.map(d => d.gastos).reverse();
+
+        // Formatear meses: "2026-03" → "Mar 2026"
+        const nombresMes = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+        const meses = mesesRaw.map(m => {
+            const [anio, mes] = m.split("-");
+            return `${nombresMes[parseInt(mes) - 1]} ${anio}`;
+        });
 
         if (chartMensual) chartMensual.destroy();
 
         const ctx = document.getElementById("chartMensual").getContext("2d");
+
+        // Gradientes
+        const gradIngreso = ctx.createLinearGradient(0, 0, 0, 350);
+        gradIngreso.addColorStop(0, "rgba(16, 185, 129, 0.9)");
+        gradIngreso.addColorStop(1, "rgba(16, 185, 129, 0.3)");
+
+        const gradGasto = ctx.createLinearGradient(0, 0, 0, 350);
+        gradGasto.addColorStop(0, "rgba(239, 68, 68, 0.9)");
+        gradGasto.addColorStop(1, "rgba(239, 68, 68, 0.3)");
+
         chartMensual = new Chart(ctx, {
-            type: "line",
+            type: "bar",
             data: {
                 labels: meses,
                 datasets: [
                     {
                         label: "Ingresos",
                         data: ingresos,
+                        backgroundColor: gradIngreso,
                         borderColor: "#10b981",
-                        backgroundColor: "rgba(16,185,129,0.1)",
-                        tension: 0.4,
-                        fill: true
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        barPercentage: 0.6,
+                        categoryPercentage: 0.7
                     },
                     {
                         label: "Gastos",
                         data: gastos,
+                        backgroundColor: gradGasto,
                         borderColor: "#ef4444",
-                        backgroundColor: "rgba(239,68,68,0.1)",
-                        tension: 0.4,
-                        fill: true
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        barPercentage: 0.6,
+                        categoryPercentage: 0.7
                     }
                 ]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: true,
+                interaction: {
+                    intersect: false,
+                    mode: "index"
+                },
                 plugins: {
-                    legend: { position: "bottom" }
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            usePointStyle: true,
+                            pointStyle: "rectRounded",
+                            padding: 20,
+                            font: { size: 13, weight: "500" }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: "rgba(15, 23, 42, 0.9)",
+                        titleFont: { size: 14, weight: "600" },
+                        bodyFont: { size: 13 },
+                        padding: 14,
+                        cornerRadius: 10,
+                        displayColors: true,
+                        boxPadding: 6,
+                        callbacks: {
+                            label: c => ` ${c.dataset.label}: S/ ${c.parsed.y.toLocaleString("es-PE", {minimumFractionDigits: 2})}`,
+                            footer: items => {
+                                const total = items.reduce((s, i) => s + i.parsed.y, 0);
+                                return `──────────\nNeto: S/ ${(items[0].parsed.y - (items[1]?.parsed.y || 0)).toLocaleString("es-PE", {minimumFractionDigits: 2})}`;
+                            }
+                        }
+                    }
                 },
                 scales: {
-                    y: { beginAtZero: true }
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: "rgba(0,0,0,0.05)", drawBorder: false },
+                        border: { display: false },
+                        ticks: {
+                            callback: v => "S/ " + v.toLocaleString(),
+                            font: { size: 12 },
+                            padding: 8
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: {
+                            font: { size: 12, weight: "500" },
+                            padding: 8
+                        }
+                    }
                 }
             }
         });
@@ -286,45 +390,201 @@ async function cargarGraficoMensual() {
     }
 }
 
-async function cargarGraficoCategoria() {
+async function cargarGraficoCampana() {
     try {
-        const resp = await fetch("tesoreria?accion=resumenCategoria");
+        const resp = await fetch("tesoreria?accion=donacionesPorCampana");
         const data = await resp.json();
 
-        const categorias = [...new Set(data.map(d => d.categoria))];
-        const colores = [
-            "#667eea", "#764ba2", "#10b981", "#f59e0b",
-            "#ef4444", "#3b82f6", "#8b5cf6", "#ec4899",
-            "#06b6d4", "#84cc16"
-        ];
+        const campanas    = data.map(d => d.campana);
+        const confirmados = data.map(d => d.montoConfirmado);
+        const pendientes  = data.map(d => d.montoPendiente);
 
-        const totales = categorias.map(cat => {
-            const items = data.filter(d => d.categoria === cat);
-            return items.reduce((sum, i) => sum + i.total, 0);
-        });
+        if (chartCampana) chartCampana.destroy();
 
-        if (chartCategoria) chartCategoria.destroy();
-
-        const ctx = document.getElementById("chartCategoria").getContext("2d");
-        chartCategoria = new Chart(ctx, {
-            type: "doughnut",
+        const ctx = document.getElementById("chartCampana").getContext("2d");
+        chartCampana = new Chart(ctx, {
+            type: "bar",
             data: {
-                labels: categorias,
-                datasets: [{
-                    data: totales,
-                    backgroundColor: colores.slice(0, categorias.length),
-                    borderWidth: 2,
-                    borderColor: "#fff"
-                }]
+                labels: campanas,
+                datasets: [
+                    {
+                        label: "Confirmado",
+                        data: confirmados,
+                        backgroundColor: "rgba(16,185,129,0.8)",
+                        borderColor: "#10b981",
+                        borderWidth: 1,
+                        borderRadius: 6
+                    },
+                    {
+                        label: "Pendiente",
+                        data: pendientes,
+                        backgroundColor: "rgba(245,158,11,0.8)",
+                        borderColor: "#f59e0b",
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { position: "bottom" }
+                    legend: { position: "bottom" },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.dataset.label}: S/ ${ctx.parsed.y.toFixed(2)}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: v => "S/ " + v.toLocaleString()
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 0
+                        }
+                    }
                 }
             }
         });
     } catch (e) {
-        console.error("Error gráfico categoría:", e);
+        console.error("Error gráfico campaña:", e);
+    }
+}
+
+// ============================================================
+// DONACIÓN DISPONIBLE — BUSCADOR DINÁMICO
+// ============================================================
+
+async function cargarDonacionesDisponibles() {
+    try {
+        const resp = await fetch("tesoreria?accion=donacionesDisponibles");
+        donacionesCache = await resp.json();
+    } catch (e) {
+        console.error("Error al cargar donaciones disponibles:", e);
+        donacionesCache = [];
+    }
+}
+
+// Inicializar buscador
+document.addEventListener("DOMContentLoaded", () => {
+    const input = document.getElementById("buscarDonacion");
+    if (!input) return;
+
+    let debounceTimer;
+    input.addEventListener("input", () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => filtrarDonaciones(input.value), 200);
+    });
+
+    input.addEventListener("focus", () => {
+        if (!donacionSeleccionada) filtrarDonaciones(input.value);
+    });
+
+    // Cerrar dropdown al hacer click fuera
+    document.addEventListener("click", (e) => {
+        const wrapper = document.querySelector(".donacion-search-wrapper");
+        if (wrapper && !wrapper.contains(e.target)) {
+            document.getElementById("donacionDropdown").classList.remove("show");
+        }
+    });
+
+    // Validar monto en tiempo real contra saldo de donación
+    const montoInput = document.getElementById("monto");
+    if (montoInput) {
+        montoInput.addEventListener("input", validarMontoContraDonacion);
+    }
+});
+
+function filtrarDonaciones(query) {
+    const dropdown = document.getElementById("donacionDropdown");
+    const q = (query || "").toLowerCase().trim();
+
+    let filtradas = donacionesCache;
+    if (q) {
+        filtradas = donacionesCache.filter(d => {
+            const texto = [
+                "#" + d.idDonacion,
+                d.donante,
+                d.dni || "",
+                d.ruc || "",
+                d.actividadOrigen || ""
+            ].join(" ").toLowerCase();
+            return texto.includes(q);
+        });
+    }
+
+    if (filtradas.length === 0) {
+        dropdown.innerHTML = '<div class="donacion-dropdown-empty">No se encontraron donaciones disponibles</div>';
+        dropdown.classList.add("show");
+        return;
+    }
+
+    dropdown.innerHTML = filtradas.map(d => `
+        <div class="donacion-dropdown-item" onclick="seleccionarDonacion(${d.idDonacion})">
+            <div class="donacion-item-main">
+                <span class="donacion-item-id">#${d.idDonacion}</span>
+                <span class="donacion-item-donante">${d.donante}</span>
+            </div>
+            <div class="donacion-item-saldo">Disponible: S/ ${parseFloat(d.saldoDisponible).toFixed(2)}</div>
+        </div>
+    `).join("");
+
+    dropdown.classList.add("show");
+}
+
+function seleccionarDonacion(idDonacion) {
+    const d = donacionesCache.find(x => x.idDonacion === idDonacion);
+    if (!d) return;
+
+    donacionSeleccionada = d;
+    document.getElementById("idDonacionSeleccionada").value = d.idDonacion;
+    document.getElementById("buscarDonacion").value = `#${d.idDonacion} - ${d.donante} — S/ ${parseFloat(d.saldoDisponible).toFixed(2)}`;
+    document.getElementById("btnClearDonacion").style.display = "flex";
+    document.getElementById("donacionDropdown").classList.remove("show");
+
+    // Mostrar info card
+    const card = document.getElementById("donacionInfoCard");
+    card.style.display = "block";
+    document.getElementById("infoDonMontoOriginal").textContent = "S/ " + parseFloat(d.montoOriginal).toFixed(2);
+    document.getElementById("infoDonSaldoDisp").textContent = "S/ " + parseFloat(d.saldoDisponible).toFixed(2);
+    document.getElementById("infoDonDonante").textContent = d.donante;
+    document.getElementById("infoDonActividad").textContent = d.actividadOrigen || "Sin actividad";
+
+    validarMontoContraDonacion();
+}
+
+function limpiarDonacionSeleccionada() {
+    donacionSeleccionada = null;
+    document.getElementById("idDonacionSeleccionada").value = "0";
+    document.getElementById("buscarDonacion").value = "";
+    document.getElementById("btnClearDonacion").style.display = "none";
+    document.getElementById("donacionInfoCard").style.display = "none";
+    document.getElementById("donacionValidacionMsg").style.display = "none";
+}
+
+function validarMontoContraDonacion() {
+    const msg = document.getElementById("donacionValidacionMsg");
+    if (!donacionSeleccionada) {
+        msg.style.display = "none";
+        return;
+    }
+
+    const monto = parseFloat(document.getElementById("monto").value) || 0;
+    if (monto > donacionSeleccionada.saldoDisponible) {
+        msg.style.display = "block";
+        msg.className = "donacion-validacion-msg donacion-val-error";
+        msg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> El monto (S/ ' + monto.toFixed(2) + ') excede el saldo disponible (S/ ' + donacionSeleccionada.saldoDisponible.toFixed(2) + ')';
+    } else if (monto > 0) {
+        msg.style.display = "block";
+        msg.className = "donacion-validacion-msg donacion-val-ok";
+        const restante = donacionSeleccionada.saldoDisponible - monto;
+        msg.innerHTML = '<i class="fa-solid fa-circle-check"></i> Saldo restante después del gasto: S/ ' + restante.toFixed(2);
+    } else {
+        msg.style.display = "none";
     }
 }

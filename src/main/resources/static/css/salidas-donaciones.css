@@ -595,6 +595,221 @@ select:focus {
     margin-top: 1.4rem;
 }
 
+/* =====================================================================
+   MULTI-DONACION — Staging y Lista de donaciones seleccionadas
+===================================================================== */
+
+/* Staging area: donacion seleccionada pendiente de agregar */
+.donacion-staging {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.6rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1px solid #fcd34d;
+    border-radius: 10px;
+    flex-wrap: wrap;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.staging-info {
+    flex: 1;
+    min-width: 150px;
+}
+
+.staging-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.staging-id {
+    font-weight: 700;
+    color: #92400e;
+    font-size: 0.9rem;
+}
+
+.staging-donante {
+    font-weight: 500;
+    color: #78350f;
+    font-size: 0.88rem;
+}
+
+.staging-saldo-text {
+    font-size: 0.82rem;
+    color: #92400e;
+}
+
+.staging-saldo-text i {
+    margin-right: 3px;
+    color: #d97706;
+}
+
+.staging-saldo-text strong {
+    color: #047857;
+}
+
+.staging-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.staging-monto-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.staging-monto-group label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #78350f;
+    white-space: nowrap;
+}
+
+.staging-monto-input {
+    width: 120px !important;
+    padding: 0.45rem 0.6rem !important;
+    font-size: 0.88rem !important;
+    border: 2px solid #fbbf24 !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    text-align: right;
+}
+
+.staging-monto-input:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2) !important;
+}
+
+.staging-btn {
+    padding: 0.4rem 0.75rem !important;
+    font-size: 0.82rem !important;
+    border-radius: 8px !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+/* Lista de donaciones agregadas */
+.donaciones-lista-container {
+    margin-top: 0.7rem;
+    border: 1px solid #c7d2fe;
+    border-radius: 10px;
+    overflow: hidden;
+    animation: slideDown 0.2s ease-out;
+}
+
+.donaciones-lista-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #3730a3;
+    border-bottom: 1px solid #c7d2fe;
+}
+
+.donaciones-lista-header i {
+    margin-right: 0.35rem;
+    color: var(--primary);
+}
+
+.donaciones-total {
+    background: #4f46e5;
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.donaciones-items {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.donacion-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s;
+}
+
+.donacion-item:last-child {
+    border-bottom: none;
+}
+
+.donacion-item:hover {
+    background: #f8fafc;
+}
+
+.donacion-item-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.donacion-item-id {
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 0.85rem;
+}
+
+.donacion-item-donante {
+    font-weight: 500;
+    color: var(--text);
+    font-size: 0.85rem;
+}
+
+.donacion-item-saldo {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.donacion-item-monto {
+    font-weight: 700;
+    color: #047857;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    background: #d1fae5;
+    padding: 3px 10px;
+    border-radius: 8px;
+}
+
+.donacion-item-remove {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.donacion-item-remove:hover {
+    background: #fee2e2;
+    color: var(--danger);
+}
+
 /* ======================= RESPONSIVE ======================= */
 @media (max-width: 900px) {
     .salidas-summary {

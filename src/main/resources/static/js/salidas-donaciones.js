@@ -1,6 +1,6 @@
 /* ===================================================================
    SALIDAS DE DONACIONES - JavaScript
-   Buscador AJAX autocompletado, modal, paginaciÃ³n, filtros, CRUD
+   Multi-donacion, buscador AJAX, modal, paginacion, filtros, CRUD
 =================================================================== */
 
 const modalSalida = document.getElementById("modalSalida");
@@ -14,18 +14,21 @@ const actividadDestinoSelect = document.getElementById("actividadDestino");
 const buscarSalidasInput = document.getElementById("buscarSalidas");
 const PAGINA_TAMANO_S = 5;
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// AUTOCOMPLETADO: Donacion origen con busqueda AJAX
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
+// MULTI-DONACION: Estado
+// ═══════════════════════════════════════════════════════
+
+let donacionesSeleccionadas = []; // [{id, donante, saldoDisponible, cantidadOriginal, montoAsignado, actividadOrigen}]
+let donacionStagingData = null;   // Temp: donacion seleccionada del buscador, pendiente de agregar
+let modoEdicion = false;          // true cuando se esta editando una salida existente
+
+// ═══════════════════════════════════════════════════════
+// AUTOCOMPLETADO: Buscador AJAX de donaciones
+// ═══════════════════════════════════════════════════════
 
 const buscarDonacionInput = document.getElementById("buscarDonacion");
 const donacionResultados = document.getElementById("donacionResultados");
-const btnLimpiar = document.getElementById("btnLimpiarDonacion");
-const donacionSelBadge = document.getElementById("donacionSeleccionada");
-const donacionSelText = document.getElementById("donacionSelectedText");
-
 let searchTimeout = null;
-let donacionSeleccionadaData = null;
 
 function inicializarAutocompletado() {
     if (!buscarDonacionInput) return;
@@ -42,7 +45,6 @@ function inicializarAutocompletado() {
         searchTimeout = setTimeout(() => buscarDonacionesAjax(query), 300);
     });
 
-    // Cerrar dropdown al hacer click fuera
     document.addEventListener("click", function (e) {
         const wrapper = document.getElementById("donacionAutocompleteWrapper");
         if (wrapper && !wrapper.contains(e.target)) {
@@ -50,7 +52,6 @@ function inicializarAutocompletado() {
         }
     });
 
-    // Teclas de navegaciÃ³n
     buscarDonacionInput.addEventListener("keydown", function (e) {
         const items = donacionResultados.querySelectorAll(".autocomplete-item");
         const activeItem = donacionResultados.querySelector(".autocomplete-item.active");
@@ -75,10 +76,6 @@ function inicializarAutocompletado() {
             cerrarDropdown();
         }
     });
-
-    if (btnLimpiar) {
-        btnLimpiar.addEventListener("click", limpiarDonacionSeleccionada);
-    }
 }
 
 async function buscarDonacionesAjax(query) {
@@ -94,8 +91,17 @@ async function buscarDonacionesAjax(query) {
             return;
         }
 
+        // Filtrar las donaciones ya seleccionadas
+        const idsSeleccionados = donacionesSeleccionadas.map(d => d.id);
+        const resultadosFiltrados = data.results.filter(d => !idsSeleccionados.includes(d.id));
+
+        if (resultadosFiltrados.length === 0) {
+            donacionResultados.innerHTML = '<div class="autocomplete-empty"><i class="fa-solid fa-check-double"></i> Todas las donaciones coincidentes ya fueron agregadas</div>';
+            return;
+        }
+
         let html = "";
-        data.results.forEach(d => {
+        resultadosFiltrados.forEach(d => {
             const donante = normalizarTextoVisual(d.donante || "");
             const actividadOrigen = normalizarTextoVisual(d.actividadOrigen || "");
             const saldoText = `S/ ${Number(d.saldoDisponible).toFixed(2)} disponible`;
@@ -121,7 +127,7 @@ async function buscarDonacionesAjax(query) {
         donacionResultados.querySelectorAll(".autocomplete-item").forEach(item => {
             item.addEventListener("click", function () {
                 const donData = JSON.parse(this.dataset.donacion);
-                seleccionarDonacion(donData);
+                mostrarStaging(donData);
             });
         });
 
@@ -131,79 +137,164 @@ async function buscarDonacionesAjax(query) {
     }
 }
 
-function seleccionarDonacion(donacion) {
-    donacionSeleccionadaData = donacion;
-    idDonacionHidden.value = donacion.id;
-
-    const donante = normalizarTextoVisual(donacion.donante || "");
-    const saldoText = `S/ ${Number(donacion.saldoDisponible).toFixed(2)}`;
-    donacionSelText.textContent = `#${donacion.id} - ${donante} - ${saldoText}`;
-    donacionSelBadge.style.display = "flex";
-
-    buscarDonacionInput.value = `#${donacion.id} - ${donante}`;
-    buscarDonacionInput.classList.add("has-selection");
-    btnLimpiar.style.display = "flex";
-
-    cerrarDropdown();
-    actualizarInfoDonacion(donacion);
-}
-
-function actualizarInfoDonacion(donacion) {
-    const infoBox = document.getElementById("infoDonacion");
-    const labelCantidad = document.getElementById("labelCantidadSalida");
-
-    document.getElementById("infoDonMonto").textContent =
-        `S/ ${Number(donacion.saldoDisponible).toFixed(2)} disponible (original: S/ ${Number(donacion.cantidadOriginal).toFixed(2)})`;
-    document.getElementById("infoDonDonante").textContent = normalizarTextoVisual(donacion.donante || "");
-    document.getElementById("infoDonActividad").textContent = normalizarTextoVisual(donacion.actividadOrigen || "");
-    infoBox.style.display = "block";
-
-    tipoSalidaHidden.value = "DINERO";
-    labelCantidad.textContent = "Monto a asignar (S/) *";
-
-    const cantidadInput = document.getElementById("cantidadSalida");
-    cantidadInput.max = donacion.saldoDisponible;
-}
-
-function limpiarDonacionSeleccionada() {
-    donacionSeleccionadaData = null;
-    idDonacionHidden.value = "";
-    buscarDonacionInput.value = "";
-    buscarDonacionInput.classList.remove("has-selection");
-    btnLimpiar.style.display = "none";
-    donacionSelBadge.style.display = "none";
-    document.getElementById("infoDonacion").style.display = "none";
-    document.getElementById("labelCantidadSalida").textContent = "Monto a asignar (S/) *";
-    tipoSalidaHidden.value = "DINERO";
-    document.getElementById("cantidadSalida").removeAttribute("max");
-    buscarDonacionInput.focus();
-}
-
 function cerrarDropdown() {
     donacionResultados.innerHTML = "";
     donacionResultados.classList.remove("open");
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
+// STAGING: Donacion pendiente de agregar
+// ═══════════════════════════════════════════════════════
+
+function mostrarStaging(donacion) {
+    if (donacionesSeleccionadas.find(d => d.id === donacion.id)) {
+        Notify.warning("Esta donacion ya fue agregada a la lista.");
+        return;
+    }
+
+    donacionStagingData = donacion;
+    const stagingDiv = document.getElementById("donacionStaging");
+    const donante = normalizarTextoVisual(donacion.donante || "ANONIMO");
+
+    document.getElementById("stagingId").textContent = `#${donacion.id}`;
+    document.getElementById("stagingDonante").textContent = donante;
+    document.getElementById("stagingSaldo").textContent = `S/ ${Number(donacion.saldoDisponible).toFixed(2)}`;
+
+    const montoInput = document.getElementById("stagingMonto");
+    montoInput.value = "";
+    montoInput.max = donacion.saldoDisponible;
+
+    stagingDiv.style.display = "flex";
+    cerrarDropdown();
+    buscarDonacionInput.value = "";
+
+    setTimeout(() => montoInput.focus(), 100);
+}
+
+function agregarDonacion() {
+    if (!donacionStagingData) return;
+
+    const montoInput = document.getElementById("stagingMonto");
+    const monto = parseFloat(montoInput.value);
+
+    if (isNaN(monto) || monto <= 0) {
+        Notify.warning("Ingrese un monto valido mayor a 0.");
+        montoInput.focus();
+        return;
+    }
+
+    const saldoDisp = parseFloat(donacionStagingData.saldoDisponible);
+    if (monto > saldoDisp) {
+        Notify.warning(`El monto S/ ${monto.toFixed(2)} excede el saldo disponible de S/ ${saldoDisp.toFixed(2)}.`);
+        montoInput.focus();
+        return;
+    }
+
+    donacionesSeleccionadas.push({
+        id: donacionStagingData.id,
+        donante: donacionStagingData.donante || "ANONIMO",
+        saldoDisponible: saldoDisp,
+        cantidadOriginal: donacionStagingData.cantidadOriginal,
+        actividadOrigen: donacionStagingData.actividadOrigen || "",
+        montoAsignado: monto
+    });
+
+    cancelarStaging();
+    actualizarListaDonaciones();
+    Notify.success("Donacion agregada correctamente");
+}
+
+function cancelarStaging() {
+    donacionStagingData = null;
+    document.getElementById("donacionStaging").style.display = "none";
+    buscarDonacionInput.focus();
+}
+
+// ═══════════════════════════════════════════════════════
+// LISTA DE DONACIONES SELECCIONADAS
+// ═══════════════════════════════════════════════════════
+
+function removerDonacion(id) {
+    donacionesSeleccionadas = donacionesSeleccionadas.filter(d => d.id !== id);
+    actualizarListaDonaciones();
+}
+
+function actualizarListaDonaciones() {
+    const container = document.getElementById("donacionesListaContainer");
+    const itemsDiv = document.getElementById("donacionesItems");
+    const totalSpan = document.getElementById("totalDonaciones");
+
+    if (donacionesSeleccionadas.length === 0) {
+        container.style.display = "none";
+        return;
+    }
+
+    container.style.display = "block";
+
+    let html = "";
+    let total = 0;
+    donacionesSeleccionadas.forEach(d => {
+        total += d.montoAsignado;
+        const donante = normalizarTextoVisual(d.donante || "ANONIMO");
+        html += `
+            <div class="donacion-item">
+                <div class="donacion-item-info">
+                    <span class="donacion-item-id">#${d.id}</span>
+                    <span class="donacion-item-donante">${donante}</span>
+                    <span class="donacion-item-saldo">Saldo: S/ ${Number(d.saldoDisponible).toFixed(2)}</span>
+                </div>
+                <div class="donacion-item-monto">S/ ${d.montoAsignado.toFixed(2)}</div>
+                <button type="button" class="donacion-item-remove" onclick="removerDonacion(${d.id})" title="Quitar donacion">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>`;
+    });
+
+    itemsDiv.innerHTML = html;
+    totalSpan.textContent = `Total: S/ ${total.toFixed(2)}`;
+}
+
+function obtenerTotalDonaciones() {
+    return donacionesSeleccionadas.reduce((sum, d) => sum + d.montoAsignado, 0);
+}
+
+function limpiarMultiDonacion() {
+    donacionesSeleccionadas = [];
+    donacionStagingData = null;
+    document.getElementById("donacionStaging").style.display = "none";
+    document.getElementById("donacionesListaContainer").style.display = "none";
+    document.getElementById("donacionesItems").innerHTML = "";
+    if (buscarDonacionInput) {
+        buscarDonacionInput.value = "";
+        buscarDonacionInput.disabled = false;
+    }
+}
+
+// ═══════════════════════════════════════════════════════
 // MODAL: Abrir / Cerrar
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
 
 function abrirModalSalida() {
     formSalida.reset();
     idSalidaInput.value = "";
     idDonacionHidden.value = "";
     accionSalidaInput.value = "registrar";
+    modoEdicion = false;
+
     document.getElementById("tituloModalSalida").innerHTML =
         '<i class="fa-solid fa-arrow-right-from-bracket"></i> Registrar Salida';
     btnGuardarSalida.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Registrar Salida';
-    document.getElementById("infoDonacion").style.display = "none";
-    document.getElementById("labelCantidadSalida").textContent = "Monto a asignar (S/) *";
+
     tipoSalidaHidden.value = "DINERO";
 
-    limpiarDonacionSeleccionada();
-    buscarDonacionInput.disabled = false;
+    // Mostrar modo creacion (multi-donacion)
+    document.getElementById("createDonacionSection").style.display = "block";
+    document.getElementById("editDonacionSection").style.display = "none";
+    document.getElementById("montoSalidaGroup").style.display = "none";
 
+    limpiarMultiDonacion();
     cargarActividadesDestino();
+
     modalSalida.style.display = "flex";
     setTimeout(() => buscarDonacionInput.focus(), 200);
 }
@@ -219,9 +310,9 @@ if (modalSalida) {
     });
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
 // CARGAR DATOS: Actividades destino
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
 
 async function cargarActividadesDestino() {
     try {
@@ -240,9 +331,9 @@ async function cargarActividadesDestino() {
     }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// EDITAR SALIDA
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
+// EDITAR SALIDA (modo single-donacion)
+// ═══════════════════════════════════════════════════════
 
 async function editarSalida(id) {
     try {
@@ -262,6 +353,8 @@ async function editarSalida(id) {
         formSalida.reset();
         accionSalidaInput.value = "editar";
         idSalidaInput.value = data.idSalida;
+        modoEdicion = true;
+
         document.getElementById("tituloModalSalida").innerHTML =
             '<i class="fa-solid fa-pen-to-square"></i> Editar Salida';
         btnGuardarSalida.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar Cambios';
@@ -277,25 +370,29 @@ async function editarSalida(id) {
             console.warn("No se pudo obtener saldo:", e);
         }
 
-        // Configurar donacion seleccionada (no editable en modo edicion)
-        const donData = {
-            id: data.idDonacion,
-            tipoDonacion: "DINERO",
-            cantidadOriginal: saldoData ? saldoData.cantidadOriginal : data.donacionCantidad,
-            saldoDisponible: saldoData ? (Number(saldoData.saldoDisponible) + data.cantidad) : data.donacionCantidad,
-            donante: data.donanteNombre || "ANONIMO",
-            actividadOrigen: data.actividadNombre || "Origen",
-            descripcion: data.donacionDescripcion || ""
-        };
+        const saldoDisp = saldoData ? (Number(saldoData.saldoDisponible) + data.cantidad) : data.donacionCantidad;
+        const donante = normalizarTextoVisual(data.donanteNombre || "ANONIMO");
 
-        seleccionarDonacion(donData);
-        buscarDonacionInput.disabled = true;
-        btnLimpiar.style.display = "none";
+        // Configurar idDonacion para el POST del form
+        idDonacionHidden.value = data.idDonacion;
 
+        // Mostrar modo edicion (single-donacion)
+        document.getElementById("createDonacionSection").style.display = "none";
+        document.getElementById("editDonacionSection").style.display = "block";
+        document.getElementById("montoSalidaGroup").style.display = "block";
+
+        document.getElementById("editDonInfo").textContent = `#${data.idDonacion} - ${donante}`;
+        document.getElementById("editDonSaldo").textContent = `S/ ${Number(saldoDisp).toFixed(2)} disponible`;
+        document.getElementById("editDonDonante").textContent = donante;
+
+        // Llenar campos
         actividadDestinoSelect.value = data.idActividad;
         document.getElementById("cantidadSalida").value = data.cantidad;
+        document.getElementById("cantidadSalida").max = saldoDisp;
+        document.getElementById("cantidadSalida").required = true;
         document.getElementById("descripcionSalida").value = data.descripcion || "";
 
+        limpiarMultiDonacion();
         modalSalida.style.display = "flex";
     } catch (err) {
         console.error("Error al obtener salida:", err);
@@ -303,9 +400,9 @@ async function editarSalida(id) {
     }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
 // ANULAR SALIDA
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
 
 async function anularSalida(id) {
     const motivo = prompt("Motivo de anulacion:", "Anulacion manual");
@@ -330,9 +427,9 @@ async function anularSalida(id) {
     }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
 // CAMBIAR ESTADO
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
 
 async function cambiarEstadoSalida(id, estado) {
     const ok = await Notify.confirm(`Cambiar estado a "${estado}"?`, "", { variant: "info", okText: "Si, confirmar" });
@@ -357,9 +454,9 @@ async function cambiarEstadoSalida(id, estado) {
     }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// FILTROS Y BÃšSQUEDA (tabla principal)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
+// FILTROS Y BUSQUEDA (tabla principal)
+// ═══════════════════════════════════════════════════════
 
 function filtrarSalidas() {
     const texto = (buscarSalidasInput?.value || "").toLowerCase().trim();
@@ -385,9 +482,9 @@ if (buscarSalidasInput) {
     buscarSalidasInput.addEventListener("input", filtrarSalidas);
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// PAGINACIÃ“N CLIENT-SIDE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
+// PAGINACION CLIENT-SIDE
+// ═══════════════════════════════════════════════════════
 
 let paginaActualS = 1;
 
@@ -400,7 +497,6 @@ function paginacionSalidas() {
 
     if (paginaActualS > totalPaginas) paginaActualS = totalPaginas;
 
-    // Primero ocultar todo; luego mostrar solo lo que corresponda a la pagina actual.
     todasLasFilas.forEach(fila => {
         fila.style.display = "none";
     });
@@ -438,14 +534,13 @@ function normalizarTextoVisual(texto) {
 }
 
 function corregirTextosRotos() {
-    // No tocar celdas completas ni contenedores de acciones; eso elimina botones/iconos.
     const selectoresSeguros = [
         "#tbodySalidas .origin-donante",
         "#tbodySalidas .origin-monto",
         "#tbodySalidas .campana-destino span",
         "#tbodySalidas .desc-text",
-        "#tbodySalidas td:nth-child(5)", // Registrado por
-        "#tbodySalidas td:nth-child(6)", // Fecha
+        "#tbodySalidas td:nth-child(5)",
+        "#tbodySalidas td:nth-child(6)",
         "#actividadDestino option"
     ];
 
@@ -462,53 +557,100 @@ document.getElementById("btnPaginaSiguienteS")?.addEventListener("click", () => 
     paginacionSalidas();
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// VALIDACIÃ“N ANTES DE ENVIAR
-// VALIDACION ANTES DE ENVIAR
+// ═══════════════════════════════════════════════════════
+// SUBMIT: Registrar (AJAX multi-donacion) / Editar (form POST)
+// ═══════════════════════════════════════════════════════
 
 if (formSalida) {
-    formSalida.addEventListener("submit", function (e) {
-        const donacionId = idDonacionHidden.value;
-        const actividad = actividadDestinoSelect.value;
-        const cantidad = parseFloat(document.getElementById("cantidadSalida").value || 0);
+    formSalida.addEventListener("submit", async function (e) {
+        e.preventDefault();
 
-        if (!donacionId) {
-            e.preventDefault();
-            Notify.warning("Debe buscar y seleccionar una donacion origen.");
-            buscarDonacionInput.focus();
-            return false;
-        }
+        const accion = accionSalidaInput.value;
 
-        if (!actividad) {
-            e.preventDefault();
-            Notify.warning("Debe seleccionar una campana/actividad destino.");
-            return false;
-        }
+        // -- MODO EDICION: form POST normal --
+        if (accion === "editar" || modoEdicion) {
+            const donacionId = idDonacionHidden.value;
+            const actividad = actividadDestinoSelect.value;
+            const cantidad = parseFloat(document.getElementById("cantidadSalida").value || 0);
 
-        if (cantidad <= 0) {
-            e.preventDefault();
-            Notify.warning("La cantidad debe ser mayor a 0.");
-            return false;
-        }
-        // Validar que el monto no exceda el saldo disponible
-        if (donacionSeleccionadaData && donacionSeleccionadaData.saldoDisponible) {
-            const saldo = parseFloat(donacionSeleccionadaData.saldoDisponible);
-            if (cantidad > saldo) {
-                e.preventDefault();
-                const msg = `El monto S/ ${cantidad.toFixed(2)} excede el saldo disponible de S/ ${saldo.toFixed(2)}.`;
-                Notify.warning(msg);
-                return false;
+            if (!donacionId) {
+                Notify.warning("Falta la donacion origen.");
+                return;
             }
+            if (!actividad) {
+                Notify.warning("Debe seleccionar una campana/actividad destino.");
+                return;
+            }
+            if (cantidad <= 0) {
+                Notify.warning("La cantidad debe ser mayor a 0.");
+                return;
+            }
+
+            // Enviar como form POST
+            this.submit();
+            return;
         }
 
+        // -- MODO CREACION: AJAX multi-donacion --
+        if (donacionesSeleccionadas.length === 0) {
+            Notify.warning("Debe agregar al menos una donacion origen.");
+            buscarDonacionInput.focus();
+            return;
+        }
 
-        buscarDonacionInput.disabled = false;
+        const actividad = actividadDestinoSelect.value;
+        if (!actividad) {
+            Notify.warning("Debe seleccionar una campana/actividad destino.");
+            return;
+        }
+
+        const descripcion = document.getElementById("descripcionSalida").value.trim();
+        const donaciones = donacionesSeleccionadas.map(d => ({
+            idDonacion: d.id,
+            monto: d.montoAsignado
+        }));
+
+        const totalAsignado = obtenerTotalDonaciones();
+        if (totalAsignado <= 0) {
+            Notify.warning("El monto total debe ser mayor a 0.");
+            return;
+        }
+
+        try {
+            btnGuardarSalida.disabled = true;
+            btnGuardarSalida.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registrando...';
+
+            const resp = await fetch("salidas-donaciones?accion=registrar_multiple", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    donaciones: donaciones,
+                    actividad: parseInt(actividad),
+                    descripcion: descripcion
+                })
+            });
+
+            const result = await resp.json();
+
+            if (result.ok) {
+                Notify.success(result.message || "Salidas registradas correctamente");
+                setTimeout(() => location.reload(), 1200);
+            } else {
+                Notify.error(result.message || "Error al registrar las salidas");
+            }
+        } catch (err) {
+            console.error("Error al registrar salidas:", err);
+            Notify.error("Error de conexion al registrar las salidas.");
+        } finally {
+            btnGuardarSalida.disabled = false;
+            btnGuardarSalida.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Registrar Salida';
+        }
     });
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
 // INICIALIZACION
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
 
 document.addEventListener("DOMContentLoaded", function () {
     inicializarAutocompletado();

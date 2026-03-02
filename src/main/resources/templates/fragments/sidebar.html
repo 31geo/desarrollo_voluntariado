@@ -63,16 +63,17 @@
     </div>
 
     <!-- DONACIONES E INVENTARIO -->
-    <div class="group" th:if="${perms.contains(8) or perms.contains(9)}">
+    <div class="group" th:if="${perms.contains(8) or perms.contains(9) or perms.contains(12) or perms.contains(13) or perms.contains(14)}">
       <button class="accordion">
         <span class="group-text">Donaciones e Inventario</span>
         <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
       <div class="panel">
         <a th:href="@{/donaciones}" class="nav-item" th:if="${perms.contains(8)}"><span>Donaciones</span></a>
-        <a th:href="@{/salidas-donaciones}" class="nav-item" th:if="${perms.contains(8)}"><span>Salidas de Donaciones</span></a>
+        <a th:href="@{/salidas-donaciones}" class="nav-item" th:if="${perms.contains(12)}"><span>Salidas de Donaciones</span></a>
         <a th:href="@{/inventario}" class="nav-item" th:if="${perms.contains(9)}"><span>Inventario</span></a>
-        <a th:href="@{/salidas-inventario}" class="nav-item" th:if="${perms.contains(9)}"><span>Salidas de Inventario</span></a>
+        <a th:href="@{/salidas-inventario}" class="nav-item" th:if="${perms.contains(13)}"><span>Salidas de Inventario</span></a>
+        <a th:href="@{/recursos-campana}" class="nav-item" th:if="${perms.contains(14)}"><span>Recursos por Campaña</span></a>
       </div>
     </div>
 

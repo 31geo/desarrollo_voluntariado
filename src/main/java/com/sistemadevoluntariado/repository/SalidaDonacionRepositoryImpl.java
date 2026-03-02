@@ -1,8 +1,8 @@
 package com.sistemadevoluntariado.repository;
 
-import java.util.ArrayList;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +25,7 @@ public class SalidaDonacionRepositoryImpl implements SalidaDonacionRepositoryCus
     @SuppressWarnings("unchecked")
     public List<SalidaDonacion> listar() {
         try {
-            // Se lista incluyendo estados CONFIRMADO y ANULADO para permitir filtrado en UI.
+            // Se lista todos los estados para permitir gestión completa en UI.
             List<Object[]> rows = em.createNativeQuery(
                     "SELECT " +
                     "s.id_salida, s.id_donacion, s.id_actividad, s.tipo_salida, s.cantidad, s.descripcion, " +
@@ -44,7 +44,6 @@ public class SalidaDonacionRepositoryImpl implements SalidaDonacionRepositoryCus
                     "LEFT JOIN inventario_item ii ON ii.id_item = s.id_item " +
                     "LEFT JOIN donacion_donante dd ON dd.id_donacion = d.id_donacion " +
                     "LEFT JOIN donante dn ON dn.id_donante = dd.id_donante " +
-                    "WHERE s.estado IN ('CONFIRMADO', 'ANULADO') " +
                     "ORDER BY s.registrado_en DESC")
                     .getResultList();
             List<SalidaDonacion> lista = new ArrayList<>();

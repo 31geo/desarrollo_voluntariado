@@ -403,6 +403,30 @@ body {
     border-bottom: 1px solid #f3f4f6;
     cursor: pointer;
     transition: background 0.15s;
+    position: relative;
+}
+
+.notif-dismiss {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 4px;
+    line-height: 1;
+    display: none;
+    transition: color 0.15s, background 0.15s;
+}
+.notif-item:hover .notif-dismiss {
+    display: block;
+}
+.notif-dismiss:hover {
+    color: #ef4444;
+    background: #fee2e2;
 }
 
 .notif-item:hover {

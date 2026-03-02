@@ -90,22 +90,25 @@ public class DonacionService {
     public boolean guardar(Donacion d) {
         try {
             boolean ok = donacionRepository.guardar(d);
-            // Si es donaciÃ³n monetaria y se guardÃ³ bien, registrar ingreso en TesorerÃ­a
-            if (ok && d.getIdTipoDonacion() == 1 && d.getIdDonacion() > 0) {
+            // Limpiar contexto de Hibernate (el SP hizo COMMIT interno)
+            try { em.clear(); } catch (Exception ignored) {}
+            // Solo registrar en tesorería si la donación queda CONFIRMADA (el SP crea como PENDIENTE)
+            if (ok && d.getIdTipoDonacion() == 1 && d.getIdDonacion() > 0
+                    && "CONFIRMADO".equalsIgnoreCase(d.getEstado())) {
                 try {
                     registrarIngresoTesoreria(d.getIdDonacion(), d, d.getIdUsuarioRegistro());
                 } catch (Exception te) {
                     logger.log(Level.WARNING,
-                            "Error al registrar ingreso en tesorerÃ­a para donaciÃ³n #" + d.getIdDonacion(), te);
+                            "Error al registrar ingreso en tesorería para donación #" + d.getIdDonacion(), te);
                 }
             }
-            // Fallback: algunos SP no realizan integraciÃ³n de inventario aunque quede confirmada.
+            // Fallback: algunos SP no realizan integración de inventario aunque quede confirmada.
             if (ok && d.getIdTipoDonacion() == 2 && d.getIdDonacion() > 0) {
                 try {
                     registrarEntradaInventarioSiConfirmada(d.getIdDonacion(), d.getIdUsuarioRegistro());
                 } catch (Exception ie) {
                     logger.log(Level.WARNING,
-                            "Error en fallback de inventario para donaciÃ³n en especie #" + d.getIdDonacion(), ie);
+                            "Error en fallback de inventario para donación en especie #" + d.getIdDonacion(), ie);
                 }
             }
             return ok;
@@ -208,40 +211,43 @@ public class DonacionService {
     // â”€â”€ MÃ©todos privados de integraciÃ³n â”€â”€
 
     private void registrarIngresoTesoreria(int idDonacion, Donacion antes, int idUsuario) {
-        // Evitar duplicados
-        List<MovimientoFinanciero> listado = tesoreriaRepository.filtrar("INGRESO", "Donaciones", null, null);
-        for (MovimientoFinanciero mv : listado) {
-            if (mv.getDescripcion() != null && mv.getDescripcion().contains("Donacion #" + idDonacion)) {
-                return; // Ya existe
+        try {
+            // Verificar duplicado
+            Number count = (Number) em.createNativeQuery(
+                    "SELECT COUNT(*) FROM movimiento_financiero WHERE descripcion LIKE :patron")
+                    .setParameter("patron", "%Donacion #" + idDonacion + "%")
+                    .getSingleResult();
+            if (count != null && count.intValue() > 0) {
+                logger.info("Movimiento tesorería ya existe para donación #" + idDonacion);
+                return;
             }
-        }
 
-        // Usar INSERT nativo para no contaminar la sesiÃ³n de Hibernate.
-        // JPA save() agrega al persistence context y si el flush falla, se marca
-        // rollback-only y se pierde la actualizaciÃ³n del estado de la donaciÃ³n.
-        String desc = "DonaciÃ³n" + (antes.getDescripcion() != null && !antes.getDescripcion().isEmpty()
-                ? ": " + antes.getDescripcion()
-                : "") + " (Donacion #" + idDonacion + ")";
-        String comprobante = resolverComprobante(antes, idDonacion);
-        double monto = antes.getCantidad() != null ? antes.getCantidad() : 0d;
-        em.createNativeQuery(
-                "INSERT INTO movimiento_financiero (tipo, monto, descripcion, categoria, comprobante, fecha_movimiento, id_actividad, id_usuario) "
-                        +
-                        "VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)")
-                .setParameter(1, "INGRESO")
-                .setParameter(2, monto)
-                .setParameter(3, desc)
-                .setParameter(4, "Donaciones")
-                .setParameter(5, comprobante)
-                .setParameter(6, LocalDate.now().toString())
-                .setParameter(7, antes.getIdActividad())
-                .setParameter(8, idUsuario)
-                .executeUpdate();
+            String desc = "Donación" + (antes.getDescripcion() != null && !antes.getDescripcion().isEmpty()
+                    ? ": " + antes.getDescripcion()
+                    : "") + " (Donacion #" + idDonacion + ")";
+            String comprobante = resolverComprobante(antes, idDonacion);
+            double monto = antes.getCantidad() != null ? antes.getCantidad() : 0d;
+
+            // Usar procedimiento almacenado sp_registrarMovimiento
+            em.createNativeQuery("CALL sp_registrarMovimiento(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)")
+                    .setParameter(1, "INGRESO")
+                    .setParameter(2, monto)
+                    .setParameter(3, desc)
+                    .setParameter(4, "Donaciones")
+                    .setParameter(5, comprobante)
+                    .setParameter(6, java.sql.Date.valueOf(LocalDate.now()))
+                    .setParameter(7, antes.getIdActividad())
+                    .setParameter(8, idUsuario)
+                    .getResultList();
+            logger.info("✓ Ingreso tesorería registrado via SP para donación #" + idDonacion + " monto=" + monto);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error al registrar ingreso tesorería para donación #" + idDonacion, e);
+        }
     }
 
     private void eliminarMovimientoTesoreria(int idDonacion) {
         try {
-            List<MovimientoFinanciero> listado = tesoreriaRepository.filtrar("INGRESO", "Donaciones", null, null);
+            List<MovimientoFinanciero> listado = tesoreriaRepository.filtrar("INGRESO", "Donaciones", null, null, null);
             for (MovimientoFinanciero mv : listado) {
                 if (mv.getDescripcion() != null && mv.getDescripcion().contains("Donacion #" + idDonacion)) {
                     tesoreriaRepository.deleteById(mv.getIdMovimiento());
@@ -255,7 +261,7 @@ public class DonacionService {
 
     private void actualizarMovimientoTesoreria(Donacion d, Donacion actual) {
         try {
-            List<MovimientoFinanciero> listado = tesoreriaRepository.filtrar("INGRESO", "Donaciones", null, null);
+            List<MovimientoFinanciero> listado = tesoreriaRepository.filtrar("INGRESO", "Donaciones", null, null, null);
             for (MovimientoFinanciero mv : listado) {
                 if (mv.getDescripcion() != null && mv.getDescripcion().contains("Donacion #" + d.getIdDonacion())) {
                     mv.setMonto(d.getCantidad() != null ? d.getCantidad() : mv.getMonto());
@@ -313,5 +319,33 @@ public class DonacionService {
                 "DonaciÃ³n en especie #" + idDonacion
                         + (actual.getDescripcion() != null ? " - " + actual.getDescripcion() : ""),
                 idUsuario);
+    }
+
+    /**
+     * Sincroniza donaciones monetarias confirmadas que no tengan movimiento en tesorería.
+     * Usa procedimiento almacenado sp_sincronizar_donaciones_tesoreria.
+     */
+    @SuppressWarnings("unchecked")
+    @Transactional(noRollbackFor = Exception.class)
+    public int sincronizarDonacionesConTesoreria() {
+        int sincronizadas = 0;
+        try {
+            List<?> result = em.createNativeQuery("CALL sp_sincronizar_donaciones_tesoreria()")
+                    .getResultList();
+            if (!result.isEmpty()) {
+                Object first = result.get(0);
+                if (first instanceof Number) {
+                    sincronizadas = ((Number) first).intValue();
+                } else if (first instanceof Object[]) {
+                    sincronizadas = ((Number) ((Object[]) first)[0]).intValue();
+                }
+            }
+            if (sincronizadas > 0) {
+                logger.info("✓ SP sincronizó " + sincronizadas + " donaciones con tesorería");
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error al sincronizar donaciones con tesorería via SP", e);
+        }
+        return sincronizadas;
     }
 }

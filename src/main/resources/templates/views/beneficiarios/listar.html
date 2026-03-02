@@ -126,6 +126,16 @@
                         <label for="observaciones" class="form-label"><span class="label-text">Observaciones</span></label>
                         <textarea id="observaciones" name="observaciones" class="form-textarea" placeholder="Observaciones..." rows="2"></textarea>
                     </div>
+                     <div class="form-group">
+                        <label for="dni" class="form-label"><span class="label-text">DNI</span></label>
+                        <div style="display:flex; gap:0.5rem;">
+                            <input type="text" id="dni" name="dni" class="form-input" placeholder="12345678" maxlength="8" style="flex:1;">
+                            <button type="button" class="btn-search-dni" onclick="buscarYLlenarDatos()" title="Buscar datos por DNI"
+                                style="padding:0.5rem 0.8rem; background:#e85d75; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.9rem; white-space:nowrap;">
+                                &#128269; Buscar
+                            </button>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label for="nombreResponsable" class="form-label"><span class="label-text">Nombre Responsable</span></label>
                         <input type="text" id="nombreResponsable" name="nombreResponsable" class="form-input" placeholder="Nombre del responsable">
@@ -134,10 +144,7 @@
                         <label for="apellidosResponsable" class="form-label"><span class="label-text">Apellidos Responsable</span></label>
                         <input type="text" id="apellidosResponsable" name="apellidosResponsable" class="form-input" placeholder="Apellidos del responsable">
                     </div>
-                    <div class="form-group">
-                        <label for="dni" class="form-label"><span class="label-text">DNI</span></label>
-                        <input type="text" id="dni" name="dni" class="form-input" placeholder="DNI" maxlength="20">
-                    </div>
+                   
                     <div class="form-group">
                         <label for="telefono" class="form-label"><span class="label-text">Teléfono</span></label>
                         <input type="tel" id="telefono" name="telefono" class="form-input" placeholder="Teléfono">

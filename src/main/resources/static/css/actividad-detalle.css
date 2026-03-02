@@ -82,6 +82,33 @@
     background: #f0fdf4;
 }
 
+/* ── Recurso agotado / bajo stock en dropdown ── */
+.search-select-option.recurso-agotado {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background: #fef2f2;
+}
+.search-select-option.recurso-agotado:hover {
+    background: #fef2f2;
+}
+
+.search-select-option.recurso-bajo {
+    background: #fffbeb;
+}
+.search-select-option.recurso-bajo:hover {
+    background: #fef3c7;
+}
+
+.search-select-option.recurso-asignado {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #eef2ff;
+    border-left: 3px solid #6366f1;
+}
+.search-select-option.recurso-asignado:hover {
+    background: #e0e7ff;
+}
+
 .search-opt-name {
     font-weight: 600;
     color: #1e293b;
@@ -426,6 +453,36 @@
 
 .btn-icon.delete:hover {
     background: #fee2e2;
+}
+
+.btn-icon.edit {
+    color: #667eea;
+}
+
+.btn-icon.edit:hover {
+    background: #e0e7ff;
+}
+
+/* ── Botón crear nuevo recurso en stock ─────────── */
+.btn-nuevo-stock {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    font-size: .82rem;
+    font-weight: 600;
+    color: #667eea;
+    background: #eef2ff;
+    border: 1.5px dashed #667eea;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .2s;
+}
+
+.btn-nuevo-stock:hover {
+    background: #667eea;
+    color: #fff;
+    border-style: solid;
 }
 
 /* ── Localidades grid ───────────────────────────── */

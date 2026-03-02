@@ -95,22 +95,6 @@ public class ActividadDetalleController {
         return resp;
     }
 
-    @PostMapping(params = "action=actualizarConseguida")
-    @ResponseBody
-    public Map<String, Object> actualizarConseguida(@RequestParam int idActividadRecurso,
-                                                     @RequestParam double cantidadConseguida) {
-        Map<String, Object> resp = new HashMap<>();
-        try {
-            actividadRecursoService.actualizarConseguida(idActividadRecurso, cantidadConseguida);
-            resp.put("success", true);
-            resp.put("message", "Cantidad actualizada");
-        } catch (Exception e) {
-            resp.put("success", false);
-            resp.put("message", "Error: " + e.getMessage());
-        }
-        return resp;
-    }
-
     @PostMapping(params = "action=eliminarRecurso")
     @ResponseBody
     public Map<String, Object> eliminarRecurso(@RequestParam int idActividadRecurso) {
@@ -119,6 +103,33 @@ public class ActividadDetalleController {
             actividadRecursoService.eliminar(idActividadRecurso);
             resp.put("success", true);
             resp.put("message", "Recurso eliminado");
+        } catch (Exception e) {
+            resp.put("success", false);
+            resp.put("message", "Error: " + e.getMessage());
+        }
+        return resp;
+    }
+
+    @PostMapping(params = "action=actualizarRecurso")
+    @ResponseBody
+    public Map<String, Object> actualizarRecurso(@RequestParam int idActividadRecurso,
+                                                  @RequestParam double cantidadRequerida,
+                                                  @RequestParam(required = false, defaultValue = "MEDIA") String prioridad,
+                                                  @RequestParam(required = false) String observacion) {
+        Map<String, Object> resp = new HashMap<>();
+        try {
+            ActividadRecurso ar = actividadRecursoService.obtenerPorId(idActividadRecurso);
+            if (ar == null) {
+                resp.put("success", false);
+                resp.put("message", "Recurso no encontrado");
+                return resp;
+            }
+            ar.setCantidadRequerida(cantidadRequerida);
+            ar.setPrioridad(prioridad);
+            ar.setObservacion(observacion);
+            actividadRecursoService.guardar(ar);
+            resp.put("success", true);
+            resp.put("message", "Recurso actualizado correctamente");
         } catch (Exception e) {
             resp.put("success", false);
             resp.put("message", "Error: " + e.getMessage());
@@ -232,7 +243,7 @@ public class ActividadDetalleController {
     @GetMapping(params = "action=catalogoRecursos")
     @ResponseBody
     public List<?> catalogoRecursos() {
-        return recursoService.obtenerTodos();
+        return recursoService.obtenerTodosConDisponibilidad();
     }
 
     @GetMapping(params = "action=catalogoRoles")
@@ -255,27 +266,6 @@ public class ActividadDetalleController {
             resp.put("success", true);
             resp.put("message", "Localidad registrada");
             resp.put("idLugar", lugar.getIdLugar());
-        } catch (Exception e) {
-            resp.put("success", false);
-            resp.put("message", "Error: " + e.getMessage());
-        }
-        return resp;
-    }
-
-    /* ── Recurso: CRUD rápido ── */
-    @PostMapping(params = "action=crearRecurso")
-    @ResponseBody
-    public Map<String, Object> crearRecurso(@RequestParam String nombre,
-                                             @RequestParam(required = false) String unidadMedida,
-                                             @RequestParam(required = false) String tipoRecurso,
-                                             @RequestParam(required = false) String descripcion) {
-        Map<String, Object> resp = new HashMap<>();
-        try {
-            var recurso = new com.sistemadevoluntariado.entity.Recurso(nombre, unidadMedida, tipoRecurso, descripcion);
-            recurso = recursoService.guardar(recurso);
-            resp.put("success", true);
-            resp.put("message", "Recurso registrado");
-            resp.put("idRecurso", recurso.getIdRecurso());
         } catch (Exception e) {
             resp.put("success", false);
             resp.put("message", "Error: " + e.getMessage());

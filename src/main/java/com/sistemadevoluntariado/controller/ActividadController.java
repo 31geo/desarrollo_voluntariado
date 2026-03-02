@@ -14,8 +14,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.sistemadevoluntariado.entity.Actividad;
+import com.sistemadevoluntariado.entity.ActividadLugar;
+import com.sistemadevoluntariado.entity.Lugar;
 import com.sistemadevoluntariado.entity.Usuario;
+import com.sistemadevoluntariado.repository.ActividadLugarRepository;
+import com.sistemadevoluntariado.repository.ActividadRepository;
 import com.sistemadevoluntariado.service.ActividadService;
+import com.sistemadevoluntariado.service.LugarService;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -25,6 +30,15 @@ public class ActividadController {
 
     @Autowired
     private ActividadService actividadService;
+
+    @Autowired
+    private LugarService lugarService;
+
+    @Autowired
+    private ActividadRepository actividadRepository;
+
+    @Autowired
+    private ActividadLugarRepository actividadLugarRepository;
 
     /* ───── Vista principal ───── */
     @GetMapping
@@ -71,6 +85,27 @@ public class ActividadController {
             a.setIdUsuario(usuario.getIdUsuario());
 
             boolean ok = actividadService.crearActividad(a);
+            if (ok && ubicacion != null && !ubicacion.isBlank()) {
+                // Buscar la actividad recién creada (última por ID del usuario)
+                try {
+                    List<Actividad> todas = actividadService.obtenerTodasActividades();
+                    Actividad nueva = todas.stream()
+                            .filter(act -> act.getNombre().equals(nombre) && 
+                                           act.getIdUsuario() != null &&
+                                           act.getIdUsuario() == usuario.getIdUsuario())
+                            .max((a1, a2) -> Integer.compare(a1.getIdActividad(), a2.getIdActividad()))
+                            .orElse(null);
+                    if (nueva != null) {
+                        Lugar lugar = crearLugarDesdeUbicacion(ubicacion);
+                        if (lugar != null) {
+                            ActividadLugar al = new ActividadLugar();
+                            al.setIdActividad(nueva.getIdActividad());
+                            al.setIdLugar(lugar.getIdLugar());
+                            actividadLugarRepository.save(al);
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
             return ok ? Map.of("success", true, "message", "Actividad creada correctamente")
                       : Map.of("success", false, "message", "Error al crear la actividad");
         } catch (Exception e) {
@@ -134,6 +169,39 @@ public class ActividadController {
         boolean ok = actividadService.eliminarActividad(id);
         return ok ? Map.of("success", true, "message", "Actividad eliminada correctamente")
                   : Map.of("success", false, "message", "Error al eliminar la actividad");
+    }
+
+    /* ───── Helper: crear Lugar automático desde ubicación ───── */
+    private Lugar crearLugarDesdeUbicacion(String ubicacion) {
+        try {
+            String[] partes = ubicacion.split(",");
+            String departamento = "";
+            String provincia = "";
+            String distrito = "";
+            String direccionRef = "";
+
+            if (partes.length >= 3) {
+                departamento = partes[partes.length - 1].trim();
+                provincia = partes[partes.length - 2].trim();
+                distrito = partes[partes.length - 3].trim();
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < partes.length - 3; i++) {
+                    if (!sb.isEmpty()) sb.append(", ");
+                    sb.append(partes[i].trim());
+                }
+                direccionRef = sb.toString();
+            } else if (partes.length == 2) {
+                distrito = partes[1].trim();
+                direccionRef = partes[0].trim();
+            } else {
+                distrito = ubicacion.trim();
+            }
+
+            Lugar lugar = new Lugar(departamento, provincia, distrito, direccionRef);
+            return lugarService.guardar(lugar);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 }
 

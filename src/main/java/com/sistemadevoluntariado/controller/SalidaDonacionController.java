@@ -100,7 +100,7 @@ public class SalidaDonacionController {
         return s;
     }
 
-    /* ───── POST: crear salida (sin parámetro accion) ───── */
+    /* ───── POST: crear salida simple (sin parámetro accion) ───── */
     @PostMapping
     public String crear(HttpSession session,
                         @RequestParam int idDonacion,
@@ -162,6 +162,76 @@ public class SalidaDonacionController {
         return "redirect:/salidas-donaciones";
     }
 
+    /* ───── POST AJAX: registrar múltiples salidas (multi-donación) ───── */
+    @SuppressWarnings("unchecked")
+    @PostMapping(params = "accion=registrar_multiple")
+    @ResponseBody
+    public Map<String, Object> registrarMultiple(@org.springframework.web.bind.annotation.RequestBody Map<String, Object> body,
+                                                  HttpSession session) {
+        Usuario user = (Usuario) session.getAttribute("usuarioLogeado");
+        if (user == null) return Map.of("ok", false, "message", "No autorizado");
+
+        try {
+            List<Map<String, Object>> donaciones = (List<Map<String, Object>>) body.get("donaciones");
+            int actividad = ((Number) body.get("actividad")).intValue();
+            String descripcion = body.get("descripcion") != null ? body.get("descripcion").toString().trim() : "";
+
+            if (donaciones == null || donaciones.isEmpty()) {
+                return Map.of("ok", false, "message", "Debe agregar al menos una donación.");
+            }
+
+            // Validar cada donación primero
+            for (Map<String, Object> don : donaciones) {
+                int idDonacion = ((Number) don.get("idDonacion")).intValue();
+                double monto = ((Number) don.get("monto")).doubleValue();
+
+                if (monto <= 0) {
+                    return Map.of("ok", false, "message", "El monto de cada donación debe ser mayor a 0.");
+                }
+
+                Map<String, Object> saldo = salidaService.obtenerSaldoDisponible(idDonacion);
+                double saldoDisponible = saldo.get("saldoDisponible") instanceof Number
+                        ? ((Number) saldo.get("saldoDisponible")).doubleValue() : 0.0;
+                if (monto > saldoDisponible) {
+                    return Map.of("ok", false, "message",
+                            String.format("El monto S/ %.2f excede el saldo disponible de la donación #%d (S/ %.2f).",
+                                    monto, idDonacion, saldoDisponible));
+                }
+            }
+
+            // Crear una salida por cada donación
+            int creadas = 0;
+            for (Map<String, Object> don : donaciones) {
+                int idDonacion = ((Number) don.get("idDonacion")).intValue();
+                double monto = ((Number) don.get("monto")).doubleValue();
+
+                SalidaDonacion s = new SalidaDonacion();
+                s.setIdDonacion(idDonacion);
+                s.setIdActividad(actividad);
+                s.setCantidad(monto);
+                s.setDescripcion(descripcion.isEmpty() ? null : descripcion);
+                s.setTipoSalida("DINERO");
+                s.setIdUsuarioRegistro(user.getIdUsuario());
+
+                boolean ok = salidaService.guardar(s);
+                if (!ok) {
+                    return Map.of("ok", false, "message",
+                            "Error al registrar la salida para donación #" + idDonacion + ". Se registraron " + creadas + " de " + donaciones.size() + ".");
+                }
+                creadas++;
+            }
+
+            String msg = donaciones.size() == 1
+                    ? "Salida registrada correctamente"
+                    : "Se registraron " + donaciones.size() + " salidas correctamente";
+            return Map.of("ok", true, "message", msg);
+
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error al registrar múltiples salidas", e);
+            return Map.of("ok", false, "message", "Error inesperado al registrar las salidas.");
+        }
+    }
+
     /* ───── POST: editar salida ───── */
     @PostMapping(params = "accion=editar")
     public String editar(HttpSession session,
@@ -220,8 +290,9 @@ public class SalidaDonacionController {
                                              HttpSession session) {
         Usuario user = (Usuario) session.getAttribute("usuarioLogeado");
         if (user == null) return Map.of("ok", false, "message", "No autorizado");
-        boolean ok = salidaService.cambiarEstado(idSalida, estado);
-        return Map.of("ok", ok, "message", ok ? "Estado actualizado" : "No se pudo actualizar el estado");
+        String error = salidaService.cambiarEstado(idSalida, estado);
+        if (error != null) return Map.of("ok", false, "message", error);
+        return Map.of("ok", true, "message", "Estado actualizado");
     }
 
     private String trim(String value) {

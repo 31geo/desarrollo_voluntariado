@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Stock - Sistema de Voluntariado</title>
+    <link rel="stylesheet" th:href="@{/css/sidebar.css}">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/recursos-campana.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<div th:insert="~{fragments/sidebar :: sidebar}"></div>
+
+<main class="main-content">
+    <div th:insert="~{fragments/topbar :: topbar}"></div>
+
+    <div class="content-body">
+
+        <!-- ═══ HEADER ═══ -->
+        <div class="rc-header">
+            <div>
+                <h1><i class="fa-solid fa-warehouse"></i> Gestión de Stock de Recursos</h1>
+                <p>Registra y controla la disponibilidad de los recursos del sistema</p>
+            </div>
+            <button class="btn btn-primary" onclick="abrirModalRegistrar()">
+                <i class="fa-solid fa-circle-plus"></i> Nuevo Recurso
+            </button>
+        </div>
+
+        <!-- ═══ KPIs ═══ -->
+        <div class="rc-kpis">
+            <div class="kpi-card total">
+                <div class="kpi-icon"><i class="fa-solid fa-layer-group"></i></div>
+                <div class="kpi-text">
+                    <span class="kpi-label">Total Recursos</span>
+                    <span class="kpi-value" id="kpiTotal">0</span>
+                </div>
+            </div>
+            <div class="kpi-card completo">
+                <div class="kpi-icon"><i class="fa-solid fa-box-open"></i></div>
+                <div class="kpi-text">
+                    <span class="kpi-label">Con Stock</span>
+                    <span class="kpi-value" id="kpiConStock">0</span>
+                </div>
+            </div>
+            <div class="kpi-card parcial">
+                <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div class="kpi-text">
+                    <span class="kpi-label">Bajo Stock</span>
+                    <span class="kpi-value" id="kpiBajoStock">0</span>
+                </div>
+            </div>
+            <div class="kpi-card pendiente">
+                <div class="kpi-icon"><i class="fa-solid fa-ban"></i></div>
+                <div class="kpi-text">
+                    <span class="kpi-label">Agotados</span>
+                    <span class="kpi-value" id="kpiAgotados">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ FILTROS ═══ -->
+        <div class="rc-filtros">
+            <div class="filtro-group">
+                <label>Tipo</label>
+                <select id="filtroTipo" class="form-input" onchange="filtrarTabla()">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="filtro-group">
+                <label>Disponibilidad</label>
+                <select id="filtroDisponibilidad" class="form-input" onchange="filtrarTabla()">
+                    <option value="">Todos</option>
+                    <option value="DISPONIBLE">Disponible</option>
+                    <option value="BAJO">Bajo Stock</option>
+                    <option value="AGOTADO">Agotado</option>
+                </select>
+            </div>
+            <div class="filtro-group">
+                <label>Buscar</label>
+                <input type="text" id="filtroBuscar" class="form-input" placeholder="Buscar recurso..." oninput="filtrarTabla()">
+            </div>
+        </div>
+
+        <!-- ═══ TABLA ═══ -->
+        <div class="rc-table-container">
+            <table class="rc-table">
+                <thead>
+                    <tr>
+                        <th>RECURSO</th>
+                        <th>TIPO</th>
+                        <th>UNIDAD</th>
+                        <th>STOCK TOTAL</th>
+                        <th>ASIGNADO</th>
+                        <th>DISPONIBLE</th>
+                        <th>ESTADO</th>
+                        <th>ACCIONES</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyRecursos">
+                    <tr><td colspan="8" class="empty-msg"><i class="fa-solid fa-spinner fa-spin"></i> Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ═══ PAGINACIÓN ═══ -->
+        <div class="rc-pagination">
+            <div class="pag-left">
+                <span>Filas por página:</span>
+                <select class="pag-select" onchange="cambiarPorPagina(this.value)">
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                <span id="paginaInfo" class="pag-info">Cargando...</span>
+            </div>
+            <div class="pag-right">
+                <button id="btnPrev" class="pag-btn" onclick="cambiarPagina(_paginaActual - 1)" disabled>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <div id="paginaNumeros" class="pag-numeros"></div>
+                <button id="btnNext" class="pag-btn" onclick="cambiarPagina(_paginaActual + 1)" disabled>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- ═══════════════════════ MODAL: Registrar / Editar ═══════════════════════ -->
+<div id="modalRecurso" class="modal-overlay" style="display:none">
+    <div class="modal-container modal-md">
+        <div class="modal-card">
+            <div class="modal-header-enhanced">
+                <div class="modal-header-content"><h2 class="modal-title" id="modalTitulo">Nuevo Recurso</h2></div>
+                <button class="modal-close-btn" onclick="cerrarModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="formRecurso" onsubmit="guardarRecurso(event)" class="modal-form">
+                <input type="hidden" id="idRecurso" value="">
+
+                <div class="form-grid">
+                    <!-- Nombre -->
+                    <div class="form-group full-width">
+                        <label class="form-label"><span class="label-text">Nombre del Recurso</span><span class="required-indicator">*</span></label>
+                        <input type="text" id="nombre" class="form-input" placeholder="Ej: Cuadernos A4, Sillas plásticas..." required>
+                    </div>
+
+                    <!-- Tipo -->
+                    <div class="form-group">
+                        <label class="form-label"><span class="label-text">Tipo de Recurso</span><span class="required-indicator">*</span></label>
+                        <select id="tipoRecurso" class="form-input" required>
+                            <option value="">Seleccione tipo</option>
+                            <option value="Material">Material</option>
+                            <option value="Equipo">Equipo</option>
+                            <option value="Herramienta">Herramienta</option>
+                            <option value="Alimento">Alimento</option>
+                            <option value="Medicamento">Medicamento</option>
+                            <option value="Vestimenta">Vestimenta</option>
+                            <option value="Tecnología">Tecnología</option>
+                            <option value="Transporte">Transporte</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+
+                    <!-- Unidad de Medida -->
+                    <div class="form-group">
+                        <label class="form-label"><span class="label-text">Unidad de Medida</span><span class="required-indicator">*</span></label>
+                        <select id="unidadMedida" class="form-input" required>
+                            <option value="">Seleccione unidad</option>
+                            <option value="Unidad">Unidad</option>
+                            <option value="Paquete">Paquete</option>
+                            <option value="Caja">Caja</option>
+                            <option value="Kilogramo">Kilogramo</option>
+                            <option value="Litro">Litro</option>
+                            <option value="Metro">Metro</option>
+                            <option value="Docena">Docena</option>
+                            <option value="Par">Par</option>
+                        </select>
+                    </div>
+
+                    <!-- Cantidad Total (Stock) -->
+                    <div class="form-group">
+                        <label class="form-label"><span class="label-text">Stock Total</span><span class="required-indicator">*</span></label>
+                        <input type="number" id="cantidadTotal" class="form-input" min="0" step="0.01" placeholder="0" required>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="form-group full-width">
+                        <label class="form-label"><span class="label-text">Descripción</span></label>
+                        <textarea id="descripcion" class="form-input" rows="2" placeholder="Descripción opcional del recurso"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnGuardar">Registrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toastContainer" class="toast-container"></div>
+
+<script th:src="@{/js/topbar.js}"></script>
+<script th:src="@{/js/recursos-campana.js}"></script>
+
+</body>
+</html>

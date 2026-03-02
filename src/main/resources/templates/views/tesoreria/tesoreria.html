@@ -25,7 +25,7 @@
                 <p>Control de ingresos, gastos y balance financiero</p>
             </div>
             <button class="btn btn-primary" onclick="abrirModal()">
-                <i class="fa-solid fa-circle-plus"></i> Nuevo Movimiento
+                <i class="fa-solid fa-circle-plus"></i> Nuevo Gasto
             </button>
         </div>
 
@@ -56,11 +56,24 @@
 
         <!-- FILTROS -->
         <div class="filtros-bar">
+            <div class="filtro-grupo filtro-busqueda">
+                <label>Buscar</label>
+                <div class="input-buscar-wrapper">
+                    <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-magnifying-glass input-icon"></i>
+                        <input type="text" id="filtroBusqueda" placeholder="Descripción, comprobante..."
+                               onkeydown="if(event.key==='Enter') filtrarMovimientos()">
+                    </div>
+                    <button class="btn btn-buscar" onclick="filtrarMovimientos()">
+                        <i class="fa-solid fa-magnifying-glass"></i> Buscar
+                    </button>
+                </div>
+            </div>
             <div class="filtro-grupo">
                 <label>Tipo</label>
                 <select id="filtroTipo" onchange="filtrarMovimientos()">
                     <option value="">Todos</option>
-                    <option value="INGRESO">Ingresos</option>
+                    <option value="INGRESO">Ingresos (Donaciones)</option>
                     <option value="GASTO">Gastos</option>
                 </select>
             </div>
@@ -69,13 +82,13 @@
                 <select id="filtroCategoria" onchange="filtrarMovimientos()">
                     <option value="">Todas</option>
                     <option value="Donaciones">Donaciones</option>
-                    <option value="Cuotas">Cuotas</option>
-                    <option value="Subvenciones">Subvenciones</option>
-                    <option value="Eventos">Eventos</option>
                     <option value="Materiales">Materiales</option>
+                    <option value="Equipos / Activos">Equipos / Activos</option>
+                    <option value="Servicios">Servicios</option>
                     <option value="Transporte">Transporte</option>
                     <option value="Alimentación">Alimentación</option>
-                    <option value="Servicios">Servicios</option>
+                    <option value="Mantenimiento">Mantenimiento</option>
+                    <option value="Logística">Logística</option>
                     <option value="Personal">Personal</option>
                     <option value="Otros">Otros</option>
                 </select>
@@ -91,6 +104,10 @@
             <button class="btn btn-secondary btn-sm" onclick="limpiarFiltros()">
                 <i class="fa-solid fa-eraser"></i> Limpiar
             </button>
+        </div>
+        <div class="filtro-recomendacion">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Se recomienda buscar por <strong>rango de fechas</strong> para obtener mejores resultados. También puede filtrar por descripción, comprobante, tipo o categoría.</span>
         </div>
 
         <!-- TABLA MOVIMIENTOS -->
@@ -138,55 +155,96 @@
         <!-- GRÁFICOS -->
         <div class="graficos-container">
             <div class="grafico-card">
-                <h3><i class="fa-solid fa-chart-line"></i> Tendencia Mensual</h3>
+                <h3><i class="fa-solid fa-chart-column"></i> Ingresos vs Gastos</h3>
                 <canvas id="chartMensual"></canvas>
             </div>
             <div class="grafico-card">
-                <h3><i class="fa-solid fa-chart-pie"></i> Distribución por Categoría</h3>
-                <canvas id="chartCategoria"></canvas>
+                <h3><i class="fa-solid fa-chart-bar"></i> Donaciones por Campaña</h3>
+                <canvas id="chartCampana"></canvas>
             </div>
         </div>
     </div>
 </main>
 
-<!-- MODAL MOVIMIENTO -->
+<!-- MODAL GASTO -->
 <div id="modalMovimiento" class="modal-overlay">
     <div class="modal-container">
         <div class="modal-card">
             <div class="modal-header-enhanced">
                 <div>
-                    <h2 id="tituloModal">Registrar Movimiento</h2>
-                    <p>Ingresa la información del movimiento financiero</p>
+                    <h2 id="tituloModal">Registrar Gasto</h2>
+                    <p>Ingresa la información del gasto</p>
                 </div>
                 <button class="modal-close-btn" onclick="cerrarModal()">&#10005;</button>
             </div>
             <form id="formMovimiento" onsubmit="guardarMovimiento(event)">
                 <input type="hidden" id="idMovimiento" name="idMovimiento">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Tipo *</label>
-                        <select id="tipo" name="tipo" class="form-input" required>
-                            <option value="">Seleccione</option>
-                            <option value="INGRESO">Ingreso</option>
-                            <option value="GASTO">Gasto</option>
-                        </select>
+                <input type="hidden" id="tipo" name="tipo" value="GASTO">
+                <input type="hidden" id="idDonacionSeleccionada" value="0">
+
+                <!-- SECCIÓN: Donación Origen (opcional) -->
+                <div class="donacion-selector-section" id="seccionDonacion">
+                    <div class="donacion-section-header">
+                        <i class="fa-solid fa-hand-holding-dollar"></i>
+                        <div>
+                            <span class="donacion-section-title">Donación Origen</span>
+                            <span class="donacion-section-subtitle">Vincular gasto a una donación (opcional)</span>
+                        </div>
                     </div>
+
+                    <label>Donación disponible</label>
+                    <div class="donacion-search-wrapper">
+                        <div class="donacion-search-input-wrap">
+                            <i class="fa-solid fa-magnifying-glass donacion-search-icon"></i>
+                            <input type="text" id="buscarDonacion" class="form-input"
+                                   placeholder="Buscar por donante, DNI/RUC o ID de donación..."
+                                   autocomplete="off">
+                            <button type="button" class="donacion-clear-btn" id="btnClearDonacion"
+                                    style="display:none" onclick="limpiarDonacionSeleccionada()">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <div class="donacion-dropdown" id="donacionDropdown"></div>
+                    </div>
+
+                    <!-- Info donación seleccionada -->
+                    <div class="donacion-info-card" id="donacionInfoCard" style="display:none">
+                        <div class="donacion-info-row">
+                            <span class="donacion-info-label">Monto original:</span>
+                            <span id="infoDonMontoOriginal">—</span>
+                        </div>
+                        <div class="donacion-info-row">
+                            <span class="donacion-info-label">Saldo disponible:</span>
+                            <span id="infoDonSaldoDisp" class="donacion-saldo-value">—</span>
+                        </div>
+                        <div class="donacion-info-row">
+                            <span class="donacion-info-label">Donante:</span>
+                            <span id="infoDonDonante">—</span>
+                        </div>
+                        <div class="donacion-info-row">
+                            <span class="donacion-info-label">Origen:</span>
+                            <span id="infoDonActividad">—</span>
+                        </div>
+                    </div>
+                    <div class="donacion-validacion-msg" id="donacionValidacionMsg" style="display:none"></div>
+                </div>
+
+                <div class="form-grid">
                     <div class="form-group">
                         <label>Monto (S/) *</label>
                         <input type="number" id="monto" name="monto" class="form-input" step="0.01" min="0.01" required>
                     </div>
                     <div class="form-group">
-                        <label>Categoría *</label>
+                        <label>Categoría de Gasto *</label>
                         <select id="categoria" name="categoria" class="form-input" required>
                             <option value="">Seleccione</option>
-                            <option value="Donaciones">Donaciones</option>
-                            <option value="Cuotas">Cuotas</option>
-                            <option value="Subvenciones">Subvenciones</option>
-                            <option value="Eventos">Eventos</option>
                             <option value="Materiales">Materiales</option>
+                            <option value="Equipos / Activos">Equipos / Activos</option>
+                            <option value="Servicios">Servicios</option>
                             <option value="Transporte">Transporte</option>
                             <option value="Alimentación">Alimentación</option>
-                            <option value="Servicios">Servicios</option>
+                            <option value="Mantenimiento">Mantenimiento</option>
+                            <option value="Logística">Logística</option>
                             <option value="Personal">Personal</option>
                             <option value="Otros">Otros</option>
                         </select>

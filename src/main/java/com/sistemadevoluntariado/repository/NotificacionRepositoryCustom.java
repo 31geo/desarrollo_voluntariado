@@ -17,4 +17,10 @@ public interface NotificacionRepositoryCustom {
     void generarNotificacionesActividadesHoy(int idUsuario);
 
     void generarNotificacionesEventosHoy(int idUsuario);
+
+    void eliminarNotificacion(int idNotificacion);
+
+    void eliminarTodasNotificaciones(int idUsuario);
+
+    void generarNotifDiaLleno(int idUsuario, String fecha);
 }

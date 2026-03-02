@@ -17,7 +17,7 @@
     <div th:insert="~{fragments/topbar :: topbar}"></div>
 
     <div class="content-body">
-        <!-- â•â•â•â•â•â•â•â•â•â•â• HEADER â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ------------------------------------------------------------------->
         <div class="salidas-header">
             <div class="salidas-header-info">
                 <h1><i class="fa-solid fa-arrow-right-from-bracket"></i> Salidas de Donaciones</h1>
@@ -28,7 +28,7 @@
             </button>
         </div>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â• TARJETAS RESUMEN â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ------------------------------------------------------------------->
         <div class="salidas-summary" th:if="${salidas != null and !salidas.empty}">
             <div class="summary-card summary-total">
                 <div class="summary-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
@@ -162,7 +162,7 @@
             </table>
         </div>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â• PAGINACIÃ“N â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ------------------------------------------------------------------->
         <div id="salidasPaginacion" class="table-pagination" style="display:none;">
             <button type="button" class="btn btn-secondary btn-sm" id="btnPaginaAnteriorS">Anterior</button>
             <span id="textoPaginacionSalidas"></span>
@@ -171,9 +171,9 @@
     </div>
 </main>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-     MODAL REGISTRAR / EDITAR SALIDA DE DONACIÃ“N
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ------------------------------------------------------------------
+                    MODAL REGISTRAR / EDITAR SALIDA DE DONACIÓN
+------------------------------------------------------------------------->
 <div id="modalSalida" class="modal-overlay">
     <div class="modal-container">
         <div class="modal-card">
@@ -191,44 +191,79 @@
                 <input type="hidden" id="tipoSalidaHidden" name="tipoSalida" value="DINERO">
 
                 <div class="form-grid">
-                    <!-- Seleccion de Donacion Origen -->
+                    <!-- Seleccion de Donaciones Origen -->
                     <section class="form-group full-width donation-mode-box">
                         <div class="inventory-section-title">
                             <i class="fa-solid fa-hand-holding-heart"></i>
-                            <span>Donacion Origen</span>
+                            <span>Donaciones Origen</span>
                         </div>
-                        <p class="section-help">Busca por nombre del donante, ID de donacion o monto</p>
-                        <div class="form-group full-width">
-                            <label>Donacion disponible *</label>
-                            <input type="hidden" id="idDonacion" name="idDonacion">
-                            <div class="autocomplete-wrapper" id="donacionAutocompleteWrapper">
-                                <div class="autocomplete-input-container">
-                                    <i class="fa-solid fa-magnifying-glass autocomplete-icon"></i>
-                                    <input type="text" id="buscarDonacion" class="form-input autocomplete-input"
-                                           placeholder="Buscar por donante, ID o monto..." autocomplete="off">
-                                    <button type="button" id="btnLimpiarDonacion" class="autocomplete-clear" style="display:none;" title="Limpiar seleccion">
+                        <input type="hidden" id="idDonacion" name="idDonacion">
+
+                        <!-- ═══ CREATE MODE: Multi-donacion ═══ -->
+                        <div id="createDonacionSection">
+                            <p class="section-help">Busca y agrega una o mas donaciones para cubrir el monto necesario</p>
+                            <div class="form-group full-width" style="margin-bottom: 0.5rem;">
+                                <div class="autocomplete-wrapper" id="donacionAutocompleteWrapper">
+                                    <div class="autocomplete-input-container">
+                                        <i class="fa-solid fa-magnifying-glass autocomplete-icon"></i>
+                                        <input type="text" id="buscarDonacion" class="form-input autocomplete-input"
+                                               placeholder="Buscar por donante, ID o monto..." autocomplete="off">
+                                    </div>
+                                    <div id="donacionResultados" class="autocomplete-dropdown"></div>
+                                </div>
+                            </div>
+
+                            <!-- Staging: donacion seleccionada pendiente de agregar -->
+                            <div id="donacionStaging" class="donacion-staging" style="display:none;">
+                                <div class="staging-info">
+                                    <div class="staging-header">
+                                        <span class="staging-id" id="stagingId"></span>
+                                        <span class="staging-donante" id="stagingDonante"></span>
+                                    </div>
+                                    <div class="staging-saldo-text">
+                                        <i class="fa-solid fa-wallet"></i> Disponible: <strong id="stagingSaldo">S/ 0.00</strong>
+                                    </div>
+                                </div>
+                                <div class="staging-actions">
+                                    <div class="staging-monto-group">
+                                        <label for="stagingMonto">Monto:</label>
+                                        <input type="number" id="stagingMonto" class="form-input staging-monto-input"
+                                               placeholder="0.00" min="0.01" step="0.01">
+                                    </div>
+                                    <button type="button" class="btn btn-success btn-sm staging-btn" onclick="agregarDonacion()">
+                                        <i class="fa-solid fa-plus"></i> Agregar
+                                    </button>
+                                    <button type="button" class="btn btn-secondary btn-sm staging-btn" onclick="cancelarStaging()">
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
                                 </div>
-                                <div id="donacionResultados" class="autocomplete-dropdown"></div>
                             </div>
-                            <div id="donacionSeleccionada" class="donacion-selected-badge" style="display:none;">
-                                <span id="donacionSelectedText"></span>
+
+                            <!-- Lista de donaciones agregadas -->
+                            <div id="donacionesListaContainer" class="donaciones-lista-container" style="display:none;">
+                                <div class="donaciones-lista-header">
+                                    <span><i class="fa-solid fa-list-check"></i> Donaciones agregadas</span>
+                                    <span id="totalDonaciones" class="donaciones-total">Total: S/ 0.00</span>
+                                </div>
+                                <div id="donacionesItems" class="donaciones-items"></div>
                             </div>
                         </div>
-                        <!-- Info de la donacion seleccionada -->
-                        <div id="infoDonacion" class="donacion-info-box" style="display:none;">
-                            <div class="info-row">
-                                <span class="info-label">Monto original:</span>
-                                <span id="infoDonMonto" class="info-value"></span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Donante:</span>
-                                <span id="infoDonDonante" class="info-value"></span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Origen:</span>
-                                <span id="infoDonActividad" class="info-value"></span>
+
+                        <!-- ═══ EDIT MODE: Donacion fija (solo lectura) ═══ -->
+                        <div id="editDonacionSection" style="display:none;">
+                            <div class="donacion-info-box">
+                                <div class="info-row">
+                                    <span class="info-label">Donacion:</span>
+                                    <span id="editDonInfo" class="info-value"></span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Saldo disponible:</span>
+                                    <span id="editDonSaldo" class="info-value"></span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Donante:</span>
+                                    <span id="editDonDonante" class="info-value"></span>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -241,10 +276,10 @@
                         </select>
                     </div>
 
-                    <!-- Monto a asignar -->
-                    <div class="form-group">
+                    <!-- Monto a asignar (visible solo en modo edicion) -->
+                    <div class="form-group" id="montoSalidaGroup" style="display:none;">
                         <label id="labelCantidadSalida">Monto a asignar (S/) *</label>
-                        <input type="number" id="cantidadSalida" name="cantidad" class="form-input" min="0.01" step="0.01" required>
+                        <input type="number" id="cantidadSalida" name="cantidad" class="form-input" min="0.01" step="0.01">
                     </div>
 
                     <!-- Descripcion -->
