@@ -1747,7 +1747,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_donacionesPorCampana` ()   BEGIN
     ORDER BY monto_confirmado DESC;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_tiene_permiso` (IN `p_id_usuario` INT, IN `p_nombre_permiso` VARCHAR(100) COLLATE utf8mb4_spanish_ci, OUT `p_resultado` TINYINT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_tiene_permiso` (IN `p_id_usuario` INT, IN `p_nombre_permiso` VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci, OUT `p_resultado` TINYINT)   BEGIN
     SELECT COUNT(*) INTO p_resultado
     FROM usuario_permiso up
     JOIN permiso p ON up.id_permiso = p.id_permiso
