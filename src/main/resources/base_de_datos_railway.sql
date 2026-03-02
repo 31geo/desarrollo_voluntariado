@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 02-03-2026 a las 04:47:18
--- Versión del servidor: 10.4.32-MariaDB
--- Versión de PHP: 8.2.12
+-- Tiempo de generaciÃ³n: 02-03-2026 a las 04:47:18
+-- VersiÃ³n del servidor: 10.4.32-MariaDB
+-- VersiÃ³n de PHP: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -149,14 +149,6 @@ CREATE PROCEDURE `sp_actualizar_donacion_inventario` (IN `p_id_donacion` INT, IN
     DECLARE v_id_donante INT DEFAULT NULL;
     DECLARE v_tipo_donante VARCHAR(20) DEFAULT NULL;
 
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
     SELECT id_tipo_donacion INTO v_tipo
     FROM donacion
     WHERE id_donacion = p_id_donacion
@@ -215,7 +207,7 @@ CREATE PROCEDURE `sp_actualizar_donacion_inventario` (IN `p_id_donacion` INT, IN
         INSERT INTO donacion_donante(id_donacion, id_donante) VALUES(p_id_donacion, v_id_donante);
     END IF;
 
-    COMMIT;
+    SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
 CREATE PROCEDURE `sp_actualizar_foto_perfil` (IN `p_id_usuario` INT, IN `p_foto_perfil` VARCHAR(255))   BEGIN
@@ -307,14 +299,6 @@ CREATE PROCEDURE `sp_anular_donacion_inventario` (IN `p_id_donacion` INT, IN `p_
     DECLARE v_stock_anterior DECIMAL(10,2) DEFAULT 0;
     DECLARE v_stock_nuevo DECIMAL(10,2) DEFAULT 0;
 
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
     SELECT id_tipo_donacion
     INTO v_tipo
     FROM donacion
@@ -374,8 +358,6 @@ CREATE PROCEDURE `sp_anular_donacion_inventario` (IN `p_id_donacion` INT, IN `p_
         motivo_anulacion = LEFT(IFNULL(p_motivo, 'Anulacion manual'), 255),
         actualizado_en = NOW()
     WHERE id_donacion = p_id_donacion;
-
-    COMMIT;
 END$$
 
 CREATE PROCEDURE `sp_anular_salida_donacion` (IN `p_id_salida` INT, IN `p_id_usuario` INT, IN `p_motivo` VARCHAR(250))   BEGIN
@@ -418,7 +400,7 @@ CREATE PROCEDURE `sp_buscar_donaciones_disponibles` (IN `p_query` VARCHAR(100)) 
         td.nombre AS tipo_donacion,
         td.id_tipo_donacion,
         COALESCE(a.nombre, 'Sin actividad') AS actividad_origen,
-        COALESCE(dn.nombre, 'AN├ôNIMO') AS donante
+        COALESCE(dn.nombre, 'ANâ”œÃ´NIMO') AS donante
     FROM donacion d
     INNER JOIN tipo_donacion td ON td.id_tipo_donacion = d.id_tipo_donacion
     LEFT JOIN actividades a ON a.id_actividad = d.id_actividad
@@ -606,14 +588,6 @@ CREATE PROCEDURE `sp_crear_notificacion` (IN `p_id_usuario` INT, IN `p_tipo` VAR
 END$$
 
 CREATE PROCEDURE `sp_crear_usuario` (IN `p_nombres` VARCHAR(100), IN `p_apellidos` VARCHAR(100), IN `p_correo` VARCHAR(100), IN `p_username` VARCHAR(60), IN `p_dni` VARCHAR(20), IN `p_password_hash` VARCHAR(255))   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        -- Manejo de errores: rollback en caso de fallo
-        ROLLBACK;
-    END;
-
-    START TRANSACTION;
-
     -- Validar si el usuario ya existe por username, correo o DNI
     IF EXISTS (SELECT 1 FROM usuario WHERE username = p_username OR correo = p_correo OR dni = p_dni) THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El usuario, correo o DNI ya existe';
@@ -625,8 +599,6 @@ CREATE PROCEDURE `sp_crear_usuario` (IN `p_nombres` VARCHAR(100), IN `p_apellido
 
     -- Devolver el ID del usuario insertado
     SELECT LAST_INSERT_ID() AS id_usuario;
-
-    COMMIT;
 END$$
 
 CREATE PROCEDURE `sp_crear_voluntario` (IN `p_nombres` VARCHAR(100), IN `p_apellidos` VARCHAR(100), IN `p_dni` VARCHAR(20), IN `p_correo` VARCHAR(100), IN `p_telefono` VARCHAR(20), IN `p_carrera` VARCHAR(100), IN `p_id_usuario` INT, IN `p_cargo` VARCHAR(50), IN `p_acceso_sistema` TINYINT)   BEGIN
@@ -820,7 +792,7 @@ END$$
 CREATE PROCEDURE `sp_filtrarMovimientos` (IN `p_tipo` VARCHAR(10), IN `p_categoria` VARCHAR(60), IN `p_fecha_ini` DATE, IN `p_fecha_fin` DATE, IN `p_busqueda` VARCHAR(200))   BEGIN
     SELECT m.id_movimiento, m.tipo, m.monto, m.descripcion,
            m.categoria, m.comprobante, m.fecha_movimiento,
-           IFNULL(a.nombre, 'ù') AS actividad,
+           IFNULL(a.nombre, 'Ã¹') AS actividad,
            m.id_actividad,
            CONCAT(u.nombres, ' ', u.apellidos) AS usuario_registro,
            m.creado_en
@@ -856,8 +828,8 @@ CREATE PROCEDURE `sp_generar_notificaciones_actividades_hoy` (IN `p_id_usuario` 
     
     INSERT INTO notificaciones (id_usuario, tipo, titulo, mensaje, icono, color, referencia_id)
     SELECT p_id_usuario, 'ACTIVIDAD_HOY',
-           CONCAT('📋 Actividad hoy: ', a.nombre),
-           CONCAT('La actividad "', a.nombre, '" está programada para hoy en ', IFNULL(a.ubicacion, 'ubicación por definir'), '.'),
+           CONCAT('ðŸ“‹ Actividad hoy: ', a.nombre),
+           CONCAT('La actividad "', a.nombre, '" estÃ¡ programada para hoy en ', IFNULL(a.ubicacion, 'ubicaciÃ³n por definir'), '.'),
            'fa-calendar-check', '#10b981', a.id_actividad
     FROM actividades a
     WHERE DATE(a.fecha_inicio) = CURDATE()
@@ -1122,7 +1094,7 @@ CREATE PROCEDURE `sp_listar_donaciones_disponibles` ()   BEGIN
         d.descripcion,
         td.nombre AS tipo_donacion,
         COALESCE(a.nombre, 'Sin actividad') AS actividad_origen,
-        COALESCE(dn.nombre, 'AN├ôNIMO') AS donante,
+        COALESCE(dn.nombre, 'ANâ”œÃ´NIMO') AS donante,
         d.estado,
         d.id_tipo_donacion
     FROM donacion d
@@ -1212,7 +1184,7 @@ CREATE PROCEDURE `sp_listar_salidas_donaciones` ()   BEGIN
         ii.nombre AS item_nombre,
         ii.unidad_medida AS item_unidad_medida,
         
-        COALESCE(dn.nombre, 'AN├ôNIMO') AS donante_nombre,
+        COALESCE(dn.nombre, 'ANâ”œÃ´NIMO') AS donante_nombre,
         
         s.motivo_anulacion,
         s.anulado_en,
@@ -1504,7 +1476,7 @@ CREATE PROCEDURE `sp_obtener_salida_donacion` (IN `p_id` INT)   BEGIN
         CONCAT(u.nombres, ' ', u.apellidos) AS usuario_registro,
         ii.nombre AS item_nombre,
         ii.unidad_medida AS item_unidad_medida,
-        COALESCE(dn.nombre, 'AN├ôNIMO') AS donante_nombre,
+        COALESCE(dn.nombre, 'ANâ”œÃ´NIMO') AS donante_nombre,
         s.motivo_anulacion,
         s.anulado_en,
         d.descripcion AS donacion_descripcion
@@ -1666,14 +1638,6 @@ CREATE PROCEDURE `sp_registrar_donacion_inventario` (IN `p_cantidad` DECIMAL(10,
     DECLARE v_id_donante INT DEFAULT NULL;
     DECLARE v_tipo_donante VARCHAR(20) DEFAULT NULL;
 
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
     IF p_cantidad IS NULL OR p_cantidad <= 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La cantidad/monto de donacion debe ser mayor a cero.';
     END IF;
@@ -1709,7 +1673,6 @@ CREATE PROCEDURE `sp_registrar_donacion_inventario` (IN `p_cantidad` DECIMAL(10,
         INSERT INTO donacion_donante(id_donacion, id_donante) VALUES(v_id_donacion, v_id_donante);
     END IF;
 
-    COMMIT;
     SELECT v_id_donacion AS id_donacion;
 END$$
 
@@ -1736,12 +1699,6 @@ CREATE PROCEDURE `sp_registrar_movimiento_inventario` (IN `p_id_item` INT, IN `p
     DECLARE v_stock_nuevo DECIMAL(10,2) DEFAULT 0;
     DECLARE v_tipo VARCHAR(20);
 
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
     SET v_tipo = UPPER(TRIM(p_tipo_movimiento));
 
     IF p_id_item IS NULL OR p_id_item <= 0 THEN
@@ -1755,8 +1712,6 @@ CREATE PROCEDURE `sp_registrar_movimiento_inventario` (IN `p_id_item` INT, IN `p
     IF v_tipo NOT IN ('ENTRADA', 'SALIDA') THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Tipo de movimiento invalido. Use ENTRADA o SALIDA.';
     END IF;
-
-    START TRANSACTION;
 
     SELECT stock_actual INTO v_stock_anterior
     FROM inventario_item
@@ -1785,7 +1740,6 @@ CREATE PROCEDURE `sp_registrar_movimiento_inventario` (IN `p_id_item` INT, IN `p
         NULL, NULL, p_observacion, p_id_usuario, NOW()
     );
 
-    COMMIT;
     SELECT v_stock_nuevo AS stock_actual;
 END$$
 
@@ -1928,7 +1882,7 @@ CREATE TABLE `actividades` (
   `cupo_maximo` int(11) NOT NULL DEFAULT 30,
   `inscritos` int(11) NOT NULL DEFAULT 0,
   `estado` enum('ACTIVO','FINALIZADO','CANCELADO') NOT NULL DEFAULT 'ACTIVO',
-  `id_usuario` int(11) DEFAULT NULL COMMENT 'Quién creó la actividad',
+  `id_usuario` int(11) DEFAULT NULL COMMENT 'QuiÃ©n creÃ³ la actividad',
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -1937,10 +1891,10 @@ CREATE TABLE `actividades` (
 --
 
 INSERT INTO `actividades` (`id_actividad`, `nombre`, `descripcion`, `fecha_inicio`, `fecha_fin`, `ubicacion`, `cupo_maximo`, `inscritos`, `estado`, `id_usuario`, `creado_en`) VALUES
-(20, 'Campaña de Limpieza del Río La Leche', 'Actividad ecológica donde voluntarios realizarán la recolección de desechos sólidos y clasificación de residuos en zonas críticas del río.', '2026-03-01', '2026-03-04', 'Ribera del Río La Leche, Chiclayo', 30, 1, 'ACTIVO', 21, '2026-03-01 18:25:09'),
-(21, 'Campaña de Limpieza Comunitaria', 'Jornada de limpieza y recolección de residuos sólidos con apoyo de voluntarios de la comunidad.', '2026-03-01', '2026-03-03', 'Parque Central del distrito', 20, 1, 'ACTIVO', 21, '2026-03-02 02:45:48'),
-(22, 'Campaña Médica Gratuita', 'Atención médica básica gratuita para la población vulnerable con apoyo de personal de salud voluntario.', '2026-03-01', '2026-03-04', 'Centro comunal del distrito', 40, 0, 'ACTIVO', 21, '2026-03-02 03:10:41'),
-(23, 'Taller de Capacitación para Voluntarios', 'Capacitación dirigida a nuevos voluntarios sobre protocolos de apoyo comunitario y manejo de recursos.', '2026-03-02', '2026-03-04', 'Auditorio municipal', 60, 0, 'ACTIVO', 21, '2026-03-02 03:11:41');
+(20, 'CampaÃ±a de Limpieza del RÃ­o La Leche', 'Actividad ecolÃ³gica donde voluntarios realizarÃ¡n la recolecciÃ³n de desechos sÃ³lidos y clasificaciÃ³n de residuos en zonas crÃ­ticas del rÃ­o.', '2026-03-01', '2026-03-04', 'Ribera del RÃ­o La Leche, Chiclayo', 30, 1, 'ACTIVO', 21, '2026-03-01 18:25:09'),
+(21, 'CampaÃ±a de Limpieza Comunitaria', 'Jornada de limpieza y recolecciÃ³n de residuos sÃ³lidos con apoyo de voluntarios de la comunidad.', '2026-03-01', '2026-03-03', 'Parque Central del distrito', 20, 1, 'ACTIVO', 21, '2026-03-02 02:45:48'),
+(22, 'CampaÃ±a MÃ©dica Gratuita', 'AtenciÃ³n mÃ©dica bÃ¡sica gratuita para la poblaciÃ³n vulnerable con apoyo de personal de salud voluntario.', '2026-03-01', '2026-03-04', 'Centro comunal del distrito', 40, 0, 'ACTIVO', 21, '2026-03-02 03:10:41'),
+(23, 'Taller de CapacitaciÃ³n para Voluntarios', 'CapacitaciÃ³n dirigida a nuevos voluntarios sobre protocolos de apoyo comunitario y manejo de recursos.', '2026-03-02', '2026-03-04', 'Auditorio municipal', 60, 0, 'ACTIVO', 21, '2026-03-02 03:11:41');
 
 -- --------------------------------------------------------
 
@@ -2025,7 +1979,7 @@ CREATE TABLE `asistencias` (
   `horas_totales` decimal(5,2) DEFAULT 0.00,
   `estado` enum('ASISTIO','FALTA','TARDANZA') NOT NULL DEFAULT 'FALTA',
   `observaciones` text DEFAULT NULL,
-  `id_usuario_registro` int(11) DEFAULT NULL COMMENT 'Usuario que registró la asistencia',
+  `id_usuario_registro` int(11) DEFAULT NULL COMMENT 'Usuario que registrÃ³ la asistencia',
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
   `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -2064,9 +2018,9 @@ CREATE TABLE `beneficiario` (
 --
 
 INSERT INTO `beneficiario` (`id_beneficiario`, `estado`, `organizacion`, `direccion`, `distrito`, `necesidad_principal`, `observaciones`, `nombre_responsable`, `apellidos_responsable`, `dni`, `telefono`, `id_usuario`, `creado_en`) VALUES
-(9, 'ACTIVO', 'Asociación Vecinal “Nueva Esperanza”', 'Jr. Los Jazmines 245', 'José Leonardo Ortiz', 'ALIMENTACIÓN', 'Vive con 2 hijos menores. Requiere apoyo mensual de alimentos básicos.', 'VIVIANA', 'FERNANDEZ ALVARADO', '74251836', '965852147', 21, '2026-03-01 19:08:22'),
-(10, 'ACTIVO', 'Asociación Solidaria Nuevo Amanecer', 'Calle Los Olivos 245', 'Chiclayo', 'Alimentos no perecibles y kits de higiene', 'La organización atiende a familias en situación de vulnerabilidad. Requieren apoyo mensual.', 'FRANK DIEGO', 'MONTENEGRO SANCHEZ', '71458521', '987123852', 21, '2026-03-01 19:57:06'),
-(11, 'ACTIVO', 'Campaña de Limpieza del Río La Leche', 'Ribera del Río La Leche, Chiclayo', 'Chiclayo', 'Materiales de limpieza y apoyo logístico', 'Grupo ambiental comunitario dedicado a la conservación del río', 'JOSH NICKSON', 'BARDALES SUAREZ', '71458543', '987456320', 21, '2026-03-01 20:21:29');
+(9, 'ACTIVO', 'AsociaciÃ³n Vecinal â€œNueva Esperanzaâ€', 'Jr. Los Jazmines 245', 'JosÃ© Leonardo Ortiz', 'ALIMENTACIÃ“N', 'Vive con 2 hijos menores. Requiere apoyo mensual de alimentos bÃ¡sicos.', 'VIVIANA', 'FERNANDEZ ALVARADO', '74251836', '965852147', 21, '2026-03-01 19:08:22'),
+(10, 'ACTIVO', 'AsociaciÃ³n Solidaria Nuevo Amanecer', 'Calle Los Olivos 245', 'Chiclayo', 'Alimentos no perecibles y kits de higiene', 'La organizaciÃ³n atiende a familias en situaciÃ³n de vulnerabilidad. Requieren apoyo mensual.', 'FRANK DIEGO', 'MONTENEGRO SANCHEZ', '71458521', '987123852', 21, '2026-03-01 19:57:06'),
+(11, 'ACTIVO', 'CampaÃ±a de Limpieza del RÃ­o La Leche', 'Ribera del RÃ­o La Leche, Chiclayo', 'Chiclayo', 'Materiales de limpieza y apoyo logÃ­stico', 'Grupo ambiental comunitario dedicado a la conservaciÃ³n del rÃ­o', 'JOSH NICKSON', 'BARDALES SUAREZ', '71458543', '987456320', 21, '2026-03-01 20:21:29');
 
 -- --------------------------------------------------------
 
@@ -2151,9 +2105,9 @@ CREATE TABLE `donacion` (
 --
 
 INSERT INTO `donacion` (`id_donacion`, `cantidad`, `descripcion`, `id_tipo_donacion`, `subtipo_donacion`, `id_actividad`, `id_usuario_registro`, `registrado_en`, `estado`, `anulado_en`, `id_usuario_anula`, `motivo_anulacion`, `actualizado_en`) VALUES
-(44, 500.00, 'Donación en efectivo para apoyar la Campaña de Limpieza del Río La Leche', 1, 'Yape/Plin', 20, 21, '2026-03-01 17:57:49', 'CONFIRMADO', NULL, NULL, NULL, '2026-03-01 17:57:55'),
-(49, 1200.00, 'Donación para apoyo general de campañas sociales', 1, 'Efectivo', 20, 21, '2026-03-01 21:43:00', 'CONFIRMADO', NULL, NULL, NULL, '2026-03-01 21:43:02'),
-(50, 900.00, ': Donación para compra de materiales de apoyo', 1, 'Yape/Plin', 21, 21, '2026-03-01 21:47:54', 'CONFIRMADO', NULL, NULL, NULL, '2026-03-01 21:47:57');
+(44, 500.00, 'DonaciÃ³n en efectivo para apoyar la CampaÃ±a de Limpieza del RÃ­o La Leche', 1, 'Yape/Plin', 20, 21, '2026-03-01 17:57:49', 'CONFIRMADO', NULL, NULL, NULL, '2026-03-01 17:57:55'),
+(49, 1200.00, 'DonaciÃ³n para apoyo general de campaÃ±as sociales', 1, 'Efectivo', 20, 21, '2026-03-01 21:43:00', 'CONFIRMADO', NULL, NULL, NULL, '2026-03-01 21:43:02'),
+(50, 900.00, ': DonaciÃ³n para compra de materiales de apoyo', 1, 'Yape/Plin', 21, 21, '2026-03-01 21:47:54', 'CONFIRMADO', NULL, NULL, NULL, '2026-03-01 21:47:57');
 
 -- --------------------------------------------------------
 
@@ -2284,7 +2238,7 @@ CREATE TABLE `inventario_item` (
 --
 
 INSERT INTO `inventario_item` (`id_item`, `nombre`, `categoria`, `unidad_medida`, `stock_actual`, `stock_minimo`, `estado`, `observacion`, `creado_en`, `actualizado_en`) VALUES
-(1, 'Arroz Costeño', 'ALIMENTOS', 'kg', 11.00, 90.00, 'ACTIVO', '', '2026-02-14 23:19:51', '2026-02-24 09:28:57'),
+(1, 'Arroz CosteÃ±o', 'ALIMENTOS', 'kg', 11.00, 90.00, 'ACTIVO', '', '2026-02-14 23:19:51', '2026-02-24 09:28:57'),
 (2, 'Agua mineral 500ml', 'ALIMENTOS', 'Unidad', 120.00, 50.00, 'ACTIVO', 'Botellas de agua para actividades de campo', '2026-03-01 21:50:56', '2026-03-01 21:50:56'),
 (3, 'Galletas integrales', 'ALIMENTOS', 'Paquete', 80.00, 30.00, 'ACTIVO', 'Paquetes individuales para refrigerios', '2026-03-01 21:50:56', '2026-03-01 21:50:56'),
 (4, 'Leche evaporada', 'ALIMENTOS', 'Lata', 45.00, 20.00, 'ACTIVO', 'Latas de 400g para donaciones alimentarias', '2026-03-01 21:50:56', '2026-03-01 21:50:56'),
@@ -2382,17 +2336,17 @@ CREATE TABLE `movimiento_financiero` (
 --
 
 INSERT INTO `movimiento_financiero` (`id_movimiento`, `tipo`, `monto`, `descripcion`, `categoria`, `comprobante`, `fecha_movimiento`, `id_actividad`, `id_usuario`, `creado_en`) VALUES
-(57, 'INGRESO', 500.00, 'Donaci¾n: Donación en efectivo para apoyar la Campaña de Limpieza del Río La Leche (Donacion #44)', 'Donaciones', 'BOLETA-44', '2026-03-01', 20, 21, '2026-03-01 18:09:57'),
-(59, 'INGRESO', 200.00, 'Donación: Donación económica destinada a la compra de materiales de limpieza y bolsas biodegradables para la campaña. (Donacion #45)', 'Donaciones', 'BOLETA-45', '2026-03-01', 20, 21, '2026-03-01 18:34:22'),
-(60, 'INGRESO', 500.00, 'Donación: donacion  (Donacion #46)', 'Donaciones', 'BOLETA-46', '2026-03-01', 20, 21, '2026-03-01 19:01:12'),
-(61, 'GASTO', 1150.00, 'Compra de impresora modelo EcoTank L3250 para uso administrativo y apoyo en campañas.', 'Equipos / Activos', 'F001-000458', '2026-03-02', 20, 21, '2026-03-01 19:02:43'),
-(62, 'GASTO', 500.00, 'Salida de Donaci¾n #3 (Donaci¾n #44): campa±a de limpieza', 'Salidas de Donaciones', NULL, '2026-03-01', 20, 21, '2026-03-01 19:59:32'),
-(63, 'INGRESO', 1200.00, 'Donación: donaciones (Donacion #48)', 'Donaciones', 'BOLETA-48', '2026-03-01', 20, 21, '2026-03-01 20:01:45'),
-(64, 'INGRESO', 1500.00, 'Donación: donaciones  (Donacion #47)', 'Donaciones', 'BOLETA-47', '2026-03-01', 20, 21, '2026-03-01 21:20:12'),
-(65, 'INGRESO', 1200.00, 'Donación: Donación para apoyo general de campañas sociales (Donacion #49)', 'Donaciones', 'BOLETA-49', '2026-03-01', 20, 21, '2026-03-01 21:43:03'),
-(66, 'INGRESO', 900.00, 'Donación: : Donación para compra de materiales de apoyo (Donacion #50)', 'Donaciones', 'BOLETA-50', '2026-03-01', 21, 21, '2026-03-01 21:47:57'),
-(67, 'GASTO', 600.00, 'Salida de Donación #4 (Donación #50): campaña de limpieza', 'Salidas de Donaciones', NULL, '2026-03-01', 21, 21, '2026-03-01 21:48:51'),
-(68, 'GASTO', 300.00, 'Salida de Donación #5 (Donación #49): campaña de limpieza', 'Salidas de Donaciones', NULL, '2026-03-01', 21, 21, '2026-03-01 21:48:55');
+(57, 'INGRESO', 500.00, 'DonaciÂ¾n: DonaciÃ³n en efectivo para apoyar la CampaÃ±a de Limpieza del RÃ­o La Leche (Donacion #44)', 'Donaciones', 'BOLETA-44', '2026-03-01', 20, 21, '2026-03-01 18:09:57'),
+(59, 'INGRESO', 200.00, 'DonaciÃ³n: DonaciÃ³n econÃ³mica destinada a la compra de materiales de limpieza y bolsas biodegradables para la campaÃ±a. (Donacion #45)', 'Donaciones', 'BOLETA-45', '2026-03-01', 20, 21, '2026-03-01 18:34:22'),
+(60, 'INGRESO', 500.00, 'DonaciÃ³n: donacion  (Donacion #46)', 'Donaciones', 'BOLETA-46', '2026-03-01', 20, 21, '2026-03-01 19:01:12'),
+(61, 'GASTO', 1150.00, 'Compra de impresora modelo EcoTank L3250 para uso administrativo y apoyo en campaÃ±as.', 'Equipos / Activos', 'F001-000458', '2026-03-02', 20, 21, '2026-03-01 19:02:43'),
+(62, 'GASTO', 500.00, 'Salida de DonaciÂ¾n #3 (DonaciÂ¾n #44): campaÂ±a de limpieza', 'Salidas de Donaciones', NULL, '2026-03-01', 20, 21, '2026-03-01 19:59:32'),
+(63, 'INGRESO', 1200.00, 'DonaciÃ³n: donaciones (Donacion #48)', 'Donaciones', 'BOLETA-48', '2026-03-01', 20, 21, '2026-03-01 20:01:45'),
+(64, 'INGRESO', 1500.00, 'DonaciÃ³n: donaciones  (Donacion #47)', 'Donaciones', 'BOLETA-47', '2026-03-01', 20, 21, '2026-03-01 21:20:12'),
+(65, 'INGRESO', 1200.00, 'DonaciÃ³n: DonaciÃ³n para apoyo general de campaÃ±as sociales (Donacion #49)', 'Donaciones', 'BOLETA-49', '2026-03-01', 20, 21, '2026-03-01 21:43:03'),
+(66, 'INGRESO', 900.00, 'DonaciÃ³n: : DonaciÃ³n para compra de materiales de apoyo (Donacion #50)', 'Donaciones', 'BOLETA-50', '2026-03-01', 21, 21, '2026-03-01 21:47:57'),
+(67, 'GASTO', 600.00, 'Salida de DonaciÃ³n #4 (DonaciÃ³n #50): campaÃ±a de limpieza', 'Salidas de Donaciones', NULL, '2026-03-01', 21, 21, '2026-03-01 21:48:51'),
+(68, 'GASTO', 300.00, 'Salida de DonaciÃ³n #5 (DonaciÃ³n #49): campaÃ±a de limpieza', 'Salidas de Donaciones', NULL, '2026-03-01', 21, 21, '2026-03-01 21:48:55');
 
 -- --------------------------------------------------------
 
@@ -2418,7 +2372,7 @@ CREATE TABLE `notificaciones` (
 --
 
 INSERT INTO `notificaciones` (`id_notificacion`, `id_usuario`, `tipo`, `titulo`, `mensaje`, `icono`, `color`, `leida`, `referencia_id`, `fecha_creacion`) VALUES
-(11, 29, 'ACTIVIDAD_HOY', '📋 Actividad hoy: Campaña de Limpieza del Río La Leche', 'La actividad \"Campaña de Limpieza del Río La Leche\" está programada para hoy en Ribera del Río La Leche, Chiclayo.', 'fa-calendar-check', '#10b981', 0, 20, '2026-03-01 14:58:20');
+(11, 29, 'ACTIVIDAD_HOY', 'ðŸ“‹ Actividad hoy: CampaÃ±a de Limpieza del RÃ­o La Leche', 'La actividad \"CampaÃ±a de Limpieza del RÃ­o La Leche\" estÃ¡ programada para hoy en Ribera del RÃ­o La Leche, Chiclayo.', 'fa-calendar-check', '#10b981', 0, 20, '2026-03-01 14:58:20');
 
 -- --------------------------------------------------------
 
@@ -2493,7 +2447,7 @@ CREATE TABLE `recurso` (
 --
 
 INSERT INTO `recurso` (`id_recurso`, `nombre`, `unidad_medida`, `tipo_recurso`, `descripcion`, `cantidad_total`) VALUES
-(20, 'Bolsas de basura resistentes', 'Unidad', 'Material', 'Bolsas grandes para recolección de residuos en campañas de limpieza', 200),
+(20, 'Bolsas de basura resistentes', 'Unidad', 'Material', 'Bolsas grandes para recolecciÃ³n de residuos en campaÃ±as de limpieza', 200),
 (21, 'Botellas de agua (500ml)', 'unidad', 'MATERIAL', 'Para hidratacion de voluntarios en campo', 240),
 (22, 'Kits de primeros auxilios', 'unidad', 'EQUIPO', 'Contiene vendas, alcohol, gasas y tijeras', 35),
 (23, 'Chalecos reflectivos', 'unidad', 'EQUIPO', 'Para identificacion y seguridad en campo', 120),
@@ -2542,15 +2496,15 @@ CREATE TABLE `rol_actividad` (
 INSERT INTO `rol_actividad` (`id_rol_actividad`, `nombre_rol`, `descripcion`) VALUES
 (1, 'Coordinador de Actividad', 'Dirige la actividad'),
 (2, 'Voluntario Operativo', 'Participa en la actividad'),
-(3, 'Responsable Logística', 'Coordina recursos'),
+(3, 'Responsable LogÃ­stica', 'Coordina recursos'),
 (4, 'Responsable Reporte', 'Documenta la actividad'),
 (5, 'Coordinador de Actividad', 'Dirige la actividad'),
 (6, 'Voluntario Operativo', 'Participa en la actividad'),
-(7, 'Responsable Logística', 'Coordina recursos'),
+(7, 'Responsable LogÃ­stica', 'Coordina recursos'),
 (8, 'Responsable Reporte', 'Documenta la actividad'),
 (9, 'Voluntario', 'Participante en actividades de voluntariado'),
-(10, 'Líder de Equipo', 'Lidera y coordina equipos de voluntarios'),
-(11, 'Encargado de Logística', 'Gestiona recursos y logística de actividades'),
+(10, 'LÃ­der de Equipo', 'Lidera y coordina equipos de voluntarios'),
+(11, 'Encargado de LogÃ­stica', 'Gestiona recursos y logÃ­stica de actividades'),
 (12, 'Coordinador de Proyecto', 'Coordina y supervisa proyectos completos'),
 (13, 'Administrador del Sistema', 'Acceso completo al sistema de voluntariado');
 
@@ -2605,9 +2559,9 @@ CREATE TABLE `salida_donacion` (
 --
 
 INSERT INTO `salida_donacion` (`id_salida`, `id_donacion`, `id_actividad`, `tipo_salida`, `cantidad`, `descripcion`, `id_item`, `cantidad_item`, `id_usuario_registro`, `registrado_en`, `estado`, `anulado_en`, `id_usuario_anula`, `motivo_anulacion`, `actualizado_en`) VALUES
-(3, 44, 20, 'DINERO', 500, 'campaña de limpieza', NULL, NULL, 21, '2026-03-01 19:45:17', 'CONFIRMADO', NULL, NULL, NULL, '2026-03-01 19:50:02'),
-(4, 50, 21, 'DINERO', 600, 'campaña de limpieza', NULL, NULL, 21, '2026-03-01 21:48:43', 'CONFIRMADO', NULL, NULL, NULL, '2026-03-01 21:48:51'),
-(5, 49, 21, 'DINERO', 300, 'campaña de limpieza', NULL, NULL, 21, '2026-03-01 21:48:43', 'CONFIRMADO', NULL, NULL, NULL, '2026-03-01 21:48:55');
+(3, 44, 20, 'DINERO', 500, 'campaÃ±a de limpieza', NULL, NULL, 21, '2026-03-01 19:45:17', 'CONFIRMADO', NULL, NULL, NULL, '2026-03-01 19:50:02'),
+(4, 50, 21, 'DINERO', 600, 'campaÃ±a de limpieza', NULL, NULL, 21, '2026-03-01 21:48:43', 'CONFIRMADO', NULL, NULL, NULL, '2026-03-01 21:48:51'),
+(5, 49, 21, 'DINERO', 300, 'campaÃ±a de limpieza', NULL, NULL, 21, '2026-03-01 21:48:43', 'CONFIRMADO', NULL, NULL, NULL, '2026-03-01 21:48:55');
 
 -- --------------------------------------------------------
 
@@ -2659,8 +2613,8 @@ CREATE TABLE `tipo_donacion` (
 --
 
 INSERT INTO `tipo_donacion` (`id_tipo_donacion`, `nombre`, `descripcion`) VALUES
-(1, 'DINERO', 'Donación monetaria'),
-(2, 'OBJETO', 'Donación de objetos o materiales');
+(1, 'DINERO', 'DonaciÃ³n monetaria'),
+(2, 'OBJETO', 'DonaciÃ³n de objetos o materiales');
 
 -- --------------------------------------------------------
 
@@ -2772,7 +2726,7 @@ INSERT INTO `voluntario` (`id_voluntario`, `nombres`, `apellidos`, `dni`, `corre
 (57, 'JHONEIL ALEXANDER', 'FLORES PEREZ', '71852255', 'johoneil@gmail.com', '987417123', 'tecnico en computacion', 'Voluntario', 0, 'ACTIVO', NULL, NULL);
 
 --
--- Índices para tablas volcadas
+-- Ãndices para tablas volcadas
 --
 
 --

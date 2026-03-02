@@ -149,14 +149,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_donacion_inventario` 
     DECLARE v_id_donante INT DEFAULT NULL;
     DECLARE v_tipo_donante VARCHAR(20) DEFAULT NULL;
 
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
     SELECT id_tipo_donacion INTO v_tipo
     FROM donacion
     WHERE id_donacion = p_id_donacion
@@ -215,7 +207,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_donacion_inventario` 
         INSERT INTO donacion_donante(id_donacion, id_donante) VALUES(p_id_donacion, v_id_donante);
     END IF;
 
-    COMMIT;
+    SELECT ROW_COUNT() AS filas_afectadas;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_foto_perfil` (IN `p_id_usuario` INT, IN `p_foto_perfil` VARCHAR(255))   BEGIN
@@ -307,14 +299,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_anular_donacion_inventario` (IN 
     DECLARE v_stock_anterior DECIMAL(10,2) DEFAULT 0;
     DECLARE v_stock_nuevo DECIMAL(10,2) DEFAULT 0;
 
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
     SELECT id_tipo_donacion
     INTO v_tipo
     FROM donacion
@@ -374,8 +358,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_anular_donacion_inventario` (IN 
         motivo_anulacion = LEFT(IFNULL(p_motivo, 'Anulacion manual'), 255),
         actualizado_en = NOW()
     WHERE id_donacion = p_id_donacion;
-
-    COMMIT;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_anular_salida_donacion` (IN `p_id_salida` INT, IN `p_id_usuario` INT, IN `p_motivo` VARCHAR(250))   BEGIN
@@ -606,14 +588,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_notificacion` (IN `p_id_us
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_usuario` (IN `p_nombres` VARCHAR(100), IN `p_apellidos` VARCHAR(100), IN `p_correo` VARCHAR(100), IN `p_username` VARCHAR(60), IN `p_dni` VARCHAR(20), IN `p_password_hash` VARCHAR(255))   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        -- Manejo de errores: rollback en caso de fallo
-        ROLLBACK;
-    END;
-
-    START TRANSACTION;
-
     -- Validar si el usuario ya existe por username, correo o DNI
     IF EXISTS (SELECT 1 FROM usuario WHERE username = p_username OR correo = p_correo OR dni = p_dni) THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El usuario, correo o DNI ya existe';
@@ -625,8 +599,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_usuario` (IN `p_nombres` V
 
     -- Devolver el ID del usuario insertado
     SELECT LAST_INSERT_ID() AS id_usuario;
-
-    COMMIT;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_voluntario` (IN `p_nombres` VARCHAR(100), IN `p_apellidos` VARCHAR(100), IN `p_dni` VARCHAR(20), IN `p_correo` VARCHAR(100), IN `p_telefono` VARCHAR(20), IN `p_carrera` VARCHAR(100), IN `p_id_usuario` INT, IN `p_cargo` VARCHAR(50), IN `p_acceso_sistema` TINYINT)   BEGIN
@@ -1666,14 +1638,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_donacion_inventario` (
     DECLARE v_id_donante INT DEFAULT NULL;
     DECLARE v_tipo_donante VARCHAR(20) DEFAULT NULL;
 
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
     IF p_cantidad IS NULL OR p_cantidad <= 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La cantidad/monto de donacion debe ser mayor a cero.';
     END IF;
@@ -1709,7 +1673,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_donacion_inventario` (
         INSERT INTO donacion_donante(id_donacion, id_donante) VALUES(v_id_donacion, v_id_donante);
     END IF;
 
-    COMMIT;
     SELECT v_id_donacion AS id_donacion;
 END$$
 
@@ -1736,12 +1699,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_movimiento_inventario`
     DECLARE v_stock_nuevo DECIMAL(10,2) DEFAULT 0;
     DECLARE v_tipo VARCHAR(20);
 
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
     SET v_tipo = UPPER(TRIM(p_tipo_movimiento));
 
     IF p_id_item IS NULL OR p_id_item <= 0 THEN
@@ -1755,8 +1712,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_movimiento_inventario`
     IF v_tipo NOT IN ('ENTRADA', 'SALIDA') THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Tipo de movimiento invalido. Use ENTRADA o SALIDA.';
     END IF;
-
-    START TRANSACTION;
 
     SELECT stock_actual INTO v_stock_anterior
     FROM inventario_item
@@ -1785,7 +1740,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_movimiento_inventario`
         NULL, NULL, p_observacion, p_id_usuario, NOW()
     );
 
-    COMMIT;
     SELECT v_stock_nuevo AS stock_actual;
 END$$
 
