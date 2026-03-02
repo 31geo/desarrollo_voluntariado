@@ -3,6 +3,6 @@ builder = "NIXPACKS"
 buildCommand = "chmod +x mvnw && ./mvnw clean package -DskipTests"
 
 [deploy]
-startCommand = "java -jar target/sistemadevoluntariado-0.0.1-SNAPSHOT.jar"
+startCommand = "java -Xms64m -Xmx256m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -jar target/sistemadevoluntariado-0.0.1-SNAPSHOT.jar"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
